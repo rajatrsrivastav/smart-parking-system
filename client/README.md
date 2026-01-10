@@ -1,36 +1,34 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Smart Parking System - Frontend
 
-## Getting Started
+A modern, mobile-first Smart Parking System web application built with Next.js and Tailwind CSS.
 
-First, run the development server:
+## 🚀 Features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+### User Application
+- **Home Screen**: View recent parking history and quick access to scan QR
+- **QR Scanner**: Mock QR code scanning to select parking location
+- **Vehicle Selection**: Choose from saved vehicles or register new ones
+- **Parking Confirmation**: Review vehicle and location details, select payment method
+- **Digital Ticket**: View parking ticket with QR code, download and share options
+- **Vehicle Retrieval**: Real-time progress tracking for car retrieval
+- **Parking History**: View all completed parking sessions
+- **Settings**: Manage profile, vehicles, and preferences
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Driver Console
+- **Dashboard**: View current and new assignments
+- **Park Assignment**: Handle vehicle parking tasks
+- **Retrieve Assignment**: Manage vehicle retrieval with progress tracking
+- **Daily Stats**: Track today's parked and retrieved vehicles
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Manager Dashboard
+- **Operations Overview**: Monitor active cars, retrieving status, and revenue
+- **Assignment Management**: View and manage all valet assignments
+- **Valet Communication**: Call or reassign valets
+- **Search & Filter**: Find assignments by plate, customer, or valet
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Super Admin Dashboard
+- **Multi-Site Management**: Switch between different parking locations
+- **Today's Performance**: Track tickets issued and collection
+- **Overall Statistics**: View total tickets, collection, and active parking
+- **Quick Actions**: Access reports, manage sites, staff, and approvals
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
