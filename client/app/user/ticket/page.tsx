@@ -14,6 +14,7 @@ interface ParkingSession {
   parking_spot: string;
   payment_status: string;
   payment_amount: number;
+  status: string;
   vehicles: { vehicle_name: string; plate_number: string };
   parking_sites: { name: string; address: string };
 }
@@ -21,6 +22,7 @@ interface ParkingSession {
 export default function TicketPage() {
   const [session, setSession] = useState<ParkingSession | null>(null);
   const [loading, setLoading] = useState(true);
+  const [retrievalLoading, setRetrievalLoading] = useState(false);
   const router = useRouter();
 
   const loadActiveSession = async () => {
@@ -28,7 +30,12 @@ export default function TicketPage() {
       const response = await fetch(`${API_BASE_URL}/api/my-session/${DEMO_USER_ID}`);
       const result = await response.json();
       if (result.success) {
-        setSession(result.data);
+        const sessionData = result.data;
+        setSession(sessionData);
+
+        if (sessionData && sessionData.payment_status === 'pending') {
+          await handleMockPayment(sessionData.id);
+        }
       }
     } catch (error) {
       console.error('Failed to load session:', error);
@@ -65,6 +72,63 @@ export default function TicketPage() {
     const hours = Math.floor(diffMs / (1000 * 60 * 60));
     const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
     return `${hours}h ${minutes}m`;
+  };
+
+  const handleRequestRetrieval = async () => {
+    if (!session) return;
+
+    setRetrievalLoading(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/request-retrieval`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          session_id: session.id,
+          user_id: DEMO_USER_ID
+        })
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        alert('Retrieval request submitted! A driver will bring your car soon.');
+        loadActiveSession();
+      } else {
+        alert('Failed to request retrieval: ' + result.error);
+      }
+    } catch (error) {
+      console.error('Error requesting retrieval:', error);
+      alert('Failed to request retrieval. Please try again.');
+    } finally {
+      setRetrievalLoading(false);
+    }
+  };
+
+  const handleMockPayment = async (sessionId: string) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/mock-payment`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          session_id: sessionId,
+          amount: 150
+        })
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        loadActiveSession();
+      } else {
+        console.error('Failed to complete payment:', result.error);
+      }
+    } catch (error) {
+      console.error('Error completing payment:', error);
+    }
   };
 
   if (loading) {
@@ -127,8 +191,15 @@ export default function TicketPage() {
         <div className="bg-gradient-to-r from-green-500 to-green-600 text-white rounded-2xl shadow-lg p-4 mb-6">
           <div className="flex items-center gap-2 mb-2">
             <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
-            <span className="font-semibold">Active Parking Session</span>
+            <span className="font-semibold">
+              {session.status === 'retrieval_requested' ? 'Retrieval Requested' : 'Active Parking Session'}
+            </span>
           </div>
+          {session.status === 'retrieval_requested' && (
+            <div className="text-sm text-green-100">
+              A driver has been notified and will bring your vehicle soon.
+            </div>
+          )}
         </div>
 
         <div className="bg-white rounded-3xl shadow-lg overflow-hidden mb-6">
@@ -240,16 +311,42 @@ export default function TicketPage() {
         </div>
 
         <div className="space-y-3 mb-6">
-          {session.payment_status === 'paid' ? (
-            <Link href="/user/retrieval">
-              <button className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-semibold flex items-center justify-center gap-2">
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"/>
-                  <path d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H10a1 1 0 001-1V5a1 1 0 00-1-1H3zM14 7a1 1 0 00-1 1v6.05A2.5 2.5 0 0115.95 16H17a1 1 0 001-1v-5a1 1 0 00-.293-.707l-2-2A1 1 0 0015 7h-1z"/>
+          {session.payment_status === 'completed' ? (
+            session.status === 'retrieval_requested' ? (
+              <button
+                disabled
+                className="w-full py-4 bg-gray-500 text-white rounded-2xl font-semibold flex items-center justify-center gap-2"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                Get My Car
+                Waiting for Driver
               </button>
-            </Link>
+            ) : (
+              <button
+                onClick={handleRequestRetrieval}
+                disabled={retrievalLoading}
+                className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white rounded-2xl font-semibold flex items-center justify-center gap-2"
+              >
+                {retrievalLoading ? (
+                  <>
+                    <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Requesting...
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"/>
+                      <path d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H10a1 1 0 001-1V5a1 1 0 00-1-1H3zM14 7a1 1 0 00-1 1v6.05A2.5 2.5 0 0115.95 16H17a1 1 0 001-1v-5a1 1 0 00-.293-.707l-2-2A1 1 0 0015 7h-1z"/>
+                    </svg>
+                    Get My Car
+                  </>
+                )}
+              </button>
+            )
           ) : (
             <button className="w-full py-4 bg-orange-600 hover:bg-orange-700 text-white rounded-2xl font-semibold flex items-center justify-center gap-2">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

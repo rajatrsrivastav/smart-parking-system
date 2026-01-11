@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS parking_sessions (
   payment_amount DECIMAL(10, 2),
   payment_method VARCHAR(50),
   payment_status VARCHAR(50) DEFAULT 'pending' CHECK (payment_status IN ('pending', 'completed', 'failed')),
-  status VARCHAR(50) DEFAULT 'active' CHECK (status IN ('active', 'completed', 'cancelled')),
+  status VARCHAR(50) DEFAULT 'active' CHECK (status IN ('active', 'completed', 'cancelled', 'retrieval_requested')),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -51,9 +51,9 @@ CREATE TABLE IF NOT EXISTS parking_sessions (
 CREATE TABLE IF NOT EXISTS valet_assignments (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   session_id UUID NOT NULL REFERENCES parking_sessions(id) ON DELETE CASCADE,
-  driver_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  driver_id UUID REFERENCES users(id) ON DELETE CASCADE,
   assignment_type VARCHAR(50) NOT NULL CHECK (assignment_type IN ('park', 'retrieve')),
-  status VARCHAR(50) DEFAULT 'assigned' CHECK (status IN ('assigned', 'in_progress', 'completed', 'cancelled')),
+  status VARCHAR(50) DEFAULT 'pending' CHECK (status IN ('pending', 'assigned', 'in_progress', 'completed', 'cancelled')),
   assigned_at TIMESTAMP WITH TIME ZONE NOT NULL,
   completed_at TIMESTAMP WITH TIME ZONE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),

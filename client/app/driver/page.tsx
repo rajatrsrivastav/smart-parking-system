@@ -11,6 +11,7 @@ const DEMO_DRIVER_ID = '7cafde48-a1fb-4f9b-a86f-676a4b15764d';
 export default function DriverPage() {
   const router = useRouter();
   const [requests, setRequests] = useState<any[]>([]);
+  const [activeAssignments, setActiveAssignments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [driverName, setDriverName] = useState('Driver');
 
@@ -35,10 +36,19 @@ export default function DriverPage() {
 
   const loadRequests = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/driver/requests`);
-      const result = await response.json();
-      if (result.success && result.data) {
-        setRequests(result.data);
+      const [requestsResponse, activeResponse] = await Promise.all([
+        fetch(`${API_BASE_URL}/api/driver/requests`),
+        fetch(`${API_BASE_URL}/api/driver/${DEMO_DRIVER_ID}/active`)
+      ]);
+
+      const requestsResult = await requestsResponse.json();
+      const activeResult = await activeResponse.json();
+
+      if (requestsResult.success && requestsResult.data) {
+        setRequests(requestsResult.data);
+      }
+      if (activeResult.success && activeResult.data) {
+        setActiveAssignments(activeResult.data);
       }
     } catch (error) {
       console.error('Failed to load requests:', error);
@@ -60,6 +70,31 @@ export default function DriverPage() {
       }
     } catch (error) {
       console.error('Failed to accept request:', error);
+    }
+  };
+
+  const handleComplete = async (assignment: any) => {
+    try {
+      const endpoint = assignment.assignment_type === 'retrieve' 
+        ? `/api/driver/complete-retrieval` 
+        : `/api/driver/complete-parking`;
+      
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          assignment_id: assignment.id,
+          ...(assignment.assignment_type === 'park' && { parking_spot: 'A-01' }) // Default spot for demo
+        })
+      });
+      
+      const result = await response.json();
+      if (result.success) {
+        loadRequests(); 
+        alert('Assignment completed successfully!');
+      }
+    } catch (error) {
+      console.error('Failed to complete assignment:', error);
     }
   };
 
@@ -252,10 +287,90 @@ export default function DriverPage() {
             </>
           )}
 
-          <div className="grid grid-cols-3 gap-3 mt-6">
+          {activeAssignments.length > 0 && (
+            <>
+              <h2 className="text-lg font-bold text-gray-900 mb-4 mt-6">Active Assignments</h2>
+              {activeAssignments.map((assignment) => (
+                <div key={assignment.id} className="mb-6">
+                  <div className="bg-white rounded-2xl shadow-lg p-5">
+                    <div className="flex items-center gap-2 mb-4">
+                      <svg className="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                      <h3 className="font-bold text-gray-900">
+                        {assignment.assignment_type === 'retrieve' ? 'Retrieving Vehicle' : 'Parking Vehicle'}
+                      </h3>
+                    </div>
+
+                    <div className="border-2 border-blue-200 rounded-2xl p-4 bg-blue-50 mb-4">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <div className="bg-blue-100 rounded-full p-3">
+                            <svg className="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                              <path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"/>
+                              <path d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H10a1 1 0 001-1V5a1 1 0 00-1-1H3zM14 7a1 1 0 00-1 1v6.05A2.5 2.5 0 0115.95 16H17a1 1 0 001-1v-5a1 1 0 00-.293-.707l-2-2A1 1 0 0015 7h-1z"/>
+                            </svg>
+                          </div>
+                          <div>
+                            <h4 className="font-semibold text-gray-900">{assignment.parking_sessions.vehicles.vehicle_name}</h4>
+                            <p className="text-sm text-gray-600">{assignment.parking_sessions.vehicles.plate_number}</p>
+                          </div>
+                        </div>
+                        <span className="px-3 py-1 bg-blue-500 text-white text-xs rounded-full font-medium">
+                          In Progress
+                        </span>
+                      </div>
+
+                      <div className="space-y-2 mb-4">
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                          </svg>
+                          <span className="font-medium">Customer:</span>
+                          <span className="text-gray-900">{assignment.parking_sessions.users.name}</span>
+                        </div>
+
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                          </svg>
+                          <span className="font-medium">Location:</span>
+                          <span className="text-gray-900">{assignment.parking_sessions.parking_sites.name}</span>
+                        </div>
+
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <span className="font-medium">Started at:</span>
+                          <span className="text-gray-900">{formatTime(assignment.assigned_at)}</span>
+                        </div>
+                      </div>
+
+                      <button 
+                        onClick={() => handleComplete(assignment)}
+                        className="w-full py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-semibold flex items-center justify-center gap-2"
+                      >
+                        Mark as Completed
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
+
+          <div className="grid grid-cols-4 gap-3 mt-6">
             <div className="bg-white rounded-xl shadow-sm p-4 text-center">
               <div className="text-2xl font-bold text-indigo-600">{requests.length}</div>
               <div className="text-xs text-gray-500 mt-1">Pending</div>
+            </div>
+            <div className="bg-white rounded-xl shadow-sm p-4 text-center">
+              <div className="text-2xl font-bold text-blue-600">{activeAssignments.length}</div>
+              <div className="text-xs text-gray-500 mt-1">Active</div>
             </div>
             <div className="bg-white rounded-xl shadow-sm p-4 text-center">
               <div className="text-2xl font-bold text-green-600">{parkRequests.length}</div>

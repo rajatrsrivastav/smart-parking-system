@@ -8,12 +8,14 @@ import {
   getAllDrivers,
   createDriver,
   updateDriver,
-  deleteDriver
+  deleteDriver,
+  getDriverActiveAssignments
 } from '../controllers/driverController.js';
 
 const router = express.Router();
 
 router.get('/driver/requests', getDriverRequests);
+router.get('/driver/:driverId/active', getDriverActiveAssignments);
 router.get('/driver/:driverId', getDriverDetails);
 router.get('/drivers', getAllDrivers);
 router.post('/drivers', createDriver);

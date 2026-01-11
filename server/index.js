@@ -141,42 +141,6 @@ app.get('/api/my-session/:userId', async (req, res) => {
   }
 });
 
-
-app.post('/api/request-retrieval', async (req, res) => {
-  try {
-    const { session_id, user_id } = req.body;
-    
-    const { data: session, error: sessionError } = await supabase
-      .from('parking_sessions')
-      .select('*')
-      .eq('id', session_id)
-      .eq('user_id', user_id)
-      .single();
-
-    if (sessionError) throw sessionError;
-    if (!session) throw new Error('Session not found');
-    if (session.payment_status !== 'paid') throw new Error('Payment required before retrieval');
-
-    const { data: assignment, error: assignmentError } = await supabase
-      .from('valet_assignments')
-      .insert([{
-        session_id,
-        assignment_type: 'retrieve',
-        status: 'pending',
-        assigned_at: new Date().toISOString()
-      }])
-      .select()
-      .single();
-
-    if (assignmentError) throw assignmentError;
-
-    res.json({ success: true, data: assignment });
-  } catch (error) {
-    res.status(400).json({ success: false, error: friendlyErrorMessage(error) });
-  }
-});
-
-
 app.post('/api/mock-payment', async (req, res) => {
   try {
     const { session_id, amount } = req.body;

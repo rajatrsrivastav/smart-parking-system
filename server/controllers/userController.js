@@ -42,9 +42,55 @@ export const getUserVehicles = async (req, res) => {
   }
 };
 
-export const createParkingRequest = async (req, res) => {
+export const getUserProfile = async (req, res) => {
   try {
-    const { user_id, vehicle_id, site_id } = req.body;
+    const { data, error } = await supabase
+      .from('users')
+      .select('id, name, email, phone, role')
+      .eq('id', req.params.userId)
+      .single();
+
+    if (error) throw error;
+    res.json({ success: true, data });
+  } catch (error) {
+    res.status(500).json({ success: false, error: friendlyErrorMessage(error) });
+  }
+};
+
+export const createParkingRequest = async (req, res) => {
+  console.log('createParkingRequest called');
+  try {
+    const { user_id, vehicle_id, site_id, payment_amount } = req.body;
+
+    // Check if user already has an active session
+    const { data: existingSession, error: checkError } = await supabase
+      .from('parking_sessions')
+      .select('id, status')
+      .eq('user_id', user_id)
+      .in('status', ['active', 'retrieval_requested'])
+      .single();
+
+    if (checkError && checkError.code !== 'PGRST116') throw checkError;
+    if (existingSession) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'You already have an active parking session. Please complete it before creating a new one.' 
+      });
+    }
+
+    // First, get the site's fixed parking fee
+    const { data: site, error: siteError } = await supabase
+      .from('parking_sites')
+      .select('fixed_parking_fee')
+      .eq('id', site_id)
+      .single();
+
+    if (siteError) throw siteError;
+    if (!site) throw new Error('Parking site not found');
+
+    const parkingFee = payment_amount || site.fixed_parking_fee;
+    console.log('Site:', site);
+    console.log('Parking fee:', parkingFee);
 
     const { data: session, error: sessionError } = await supabase
       .from('parking_sessions')
@@ -53,33 +99,59 @@ export const createParkingRequest = async (req, res) => {
         vehicle_id,
         site_id,
         entry_time: new Date().toISOString(),
-        status: 'pending',
-        payment_status: 'pending'
+        status: 'active',
+        payment_status: 'completed',
+        payment_amount: parkingFee,
+        parking_fee: parkingFee
       }])
       .select(`
-        *,
+        id, user_id, vehicle_id, site_id, parking_spot, entry_time, exit_time, payment_amount, payment_method, payment_status, status, created_at, updated_at,
         users(name, phone),
         vehicles(vehicle_name, plate_number),
-        parking_sites(name, address)
+        parking_sites(name, address, fixed_parking_fee)
       `)
       .single();
 
     if (sessionError) throw sessionError;
 
-    const { data: assignment, error: assignmentError } = await supabase
-      .from('valet_assignments')
+    // Create payment record
+    const { error: paymentError } = await supabase
+      .from('parking_payments')
       .insert([{
         session_id: session.id,
-        assignment_type: 'park',
-        status: 'pending',
-        assigned_at: new Date().toISOString()
-      }])
-      .select()
-      .single();
+        user_id,
+        amount: parkingFee,
+        payment_method: 'card',
+        payment_status: 'completed',
+        transaction_id: `PARK-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        paid_at: new Date().toISOString()
+      }]);
 
-    if (assignmentError) throw assignmentError;
+    if (paymentError) throw paymentError;
 
-    res.status(201).json({ success: true, data: { session, assignment } });
+    // For now, skip valet assignment creation to avoid driver_id constraint issues
+    // const { data: assignment, error: assignmentError } = await supabase
+    //   .from('valet_assignments')
+    //   .insert([{
+    //     session_id: session.id,
+    //     driver_id: null,
+    //     assignment_type: 'park',
+    //     status: 'pending',
+    //     assigned_at: new Date().toISOString()
+    //   }])
+    //   .select()
+    //   .single();
+
+    // if (assignmentError) throw assignmentError;
+
+    // Ensure the parking_fee is set in the response
+    const responseSession = {
+      ...session,
+      parking_fee: parkingFee,
+      payment_amount: parkingFee
+    };
+
+    res.status(201).json({ success: true, data: { session: responseSession, parking_fee: parkingFee } });
   } catch (error) {
     res.status(500).json({ success: false, error: friendlyErrorMessage(error) });
   }
@@ -96,7 +168,7 @@ export const getMySession = async (req, res) => {
         valet_assignments(status, assignment_type)
       `)
       .eq('user_id', req.params.userId)
-      .eq('status', 'active')
+      .in('status', ['active', 'retrieval_requested'])
       .order('entry_time', { ascending: false })
       .limit(1)
       .single();
@@ -121,14 +193,16 @@ export const requestRetrieval = async (req, res) => {
 
     if (sessionError) throw sessionError;
     if (!session) throw new Error('Session not found');
-    if (session.payment_status !== 'paid') throw new Error('Payment required before retrieval');
+    if (session.payment_status !== 'completed') throw new Error('Payment required before retrieval');
 
+    // Create valet assignment for retrieval
     const { data: assignment, error: assignmentError } = await supabase
       .from('valet_assignments')
       .insert([{
         session_id,
+        driver_id: null,
         assignment_type: 'retrieve',
-        status: 'pending',
+        status: 'assigned',  // Changed from 'pending' temporarily
         assigned_at: new Date().toISOString()
       }])
       .select()
@@ -136,8 +210,20 @@ export const requestRetrieval = async (req, res) => {
 
     if (assignmentError) throw assignmentError;
 
-    res.json({ success: true, data: assignment });
+    // Update the session status to indicate retrieval requested
+    const { error: updateError } = await supabase
+      .from('parking_sessions')
+      .update({ status: 'retrieval_requested' })
+      .eq('id', session_id);
+
+    if (updateError) {
+      console.error('Update error:', updateError);
+      throw updateError;
+    }
+
+    res.json({ success: true, message: 'Retrieval request submitted successfully' });
   } catch (error) {
+    console.error('Request retrieval error:', error);
     res.status(400).json({ success: false, error: friendlyErrorMessage(error) });
   }
 };
@@ -149,7 +235,7 @@ export const mockPayment = async (req, res) => {
     const { data, error } = await supabase
       .from('parking_sessions')
       .update({
-        payment_status: 'paid',
+        payment_status: 'completed',
         payment_amount: amount,
         payment_method: 'test'
       })

@@ -23,11 +23,11 @@ CREATE INDEX IF NOT EXISTS idx_sessions_user ON parking_sessions(user_id);
 CREATE INDEX IF NOT EXISTS idx_payments_status ON parking_payments(payment_status);
 CREATE INDEX IF NOT EXISTS idx_payments_transaction ON parking_payments(transaction_id);
 
-ALTER TABLE parking_sites ADD COLUMN IF NOT EXISTS hourly_rate DECIMAL(10, 2) DEFAULT 50.00;
+ALTER TABLE parking_sites ADD COLUMN IF NOT EXISTS fixed_parking_fee DECIMAL(10, 2) DEFAULT 50.00;
 
-UPDATE parking_sites SET hourly_rate = 50.00 WHERE hourly_rate IS NULL;
+UPDATE parking_sites SET fixed_parking_fee = 50.00 WHERE fixed_parking_fee IS NULL;
 
-ALTER TABLE parking_sessions ADD COLUMN IF NOT EXISTS payment_status VARCHAR(20) DEFAULT 'pending';
+ALTER TABLE parking_sessions ADD COLUMN IF NOT EXISTS parking_fee DECIMAL(10, 2);
 
 CREATE OR REPLACE FUNCTION decrement_parking_slots(site_id UUID)
 RETURNS void AS $$
@@ -62,12 +62,22 @@ VALUES
   ('Mahesh Singh', 'mahesh@driver.com', '9876543222', 'driver', true)
 ON CONFLICT (email) DO NOTHING;
 
-INSERT INTO parking_sites (name, address, city, total_slots, available_slots, hourly_rate)
+INSERT INTO parking_sites (name, address, city, total_slots, available_slots, fixed_parking_fee)
 VALUES 
   ('Inorbit Mall', 'Hitech City Road', 'Hyderabad', 500, 500, 50.00),
   ('Phoenix Mall', 'Jubilee Hills', 'Hyderabad', 300, 300, 60.00),
   ('Forum Mall', 'Koramangala', 'Bangalore', 400, 400, 55.00)
 ON CONFLICT DO NOTHING;
+
+ALTER TABLE parking_sessions DROP CONSTRAINT IF EXISTS parking_sessions_status_check;
+ALTER TABLE parking_sessions ADD CONSTRAINT parking_sessions_status_check 
+  CHECK (status IN ('active', 'completed', 'cancelled', 'retrieval_requested'));
+
+ALTER TABLE valet_assignments DROP CONSTRAINT IF EXISTS valet_assignments_status_check;
+ALTER TABLE valet_assignments ADD CONSTRAINT valet_assignments_status_check 
+  CHECK (status IN ('pending', 'assigned', 'in_progress', 'completed', 'cancelled'));
+
+ALTER TABLE valet_assignments ALTER COLUMN driver_id DROP NOT NULL;
 
 COMMENT ON TABLE parking_payments IS 'Real payment transactions - NO MOCK DATA';
 COMMENT ON TABLE valet_assignments IS 'Real driver assignments from user requests';

@@ -1,12 +1,85 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { API_BASE_URL } from '@/lib/api';
+
+const DEMO_USER_ID = 'd7eb7b17-6d46-4df7-8b43-c50206863e28';
+const DEMO_VEHICLE_ID = 'vehicle-id-here';
+const DEMO_SITE_ID = 'site-id-here';
 
 export default function ConfirmParkingPage() {
   const router = useRouter();
   const [selectedPayment, setSelectedPayment] = useState('upi');
+  const [loading, setLoading] = useState(false);
+  const [sites, setSites] = useState<any[]>([]);
+  const [selectedSite, setSelectedSite] = useState<any>(null);
+  const [vehicles, setVehicles] = useState<any[]>([]);
+  const [selectedVehicle, setSelectedVehicle] = useState<any>(null);
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const vehiclesResponse = await fetch(`${API_BASE_URL}/api/users/${DEMO_USER_ID}/vehicles`);
+        const vehiclesResult = await vehiclesResponse.json();
+        if (vehiclesResult.success) {
+          setVehicles(vehiclesResult.data);
+          if (vehiclesResult.data.length > 0) {
+            setSelectedVehicle(vehiclesResult.data[0]);
+          }
+        }
+
+        const sitesResponse = await fetch(`${API_BASE_URL}/api/sites`);
+        const sitesResult = await sitesResponse.json();
+        if (sitesResult.success) {
+          setSites(sitesResult.data);
+          if (sitesResult.data.length > 0) {
+            setSelectedSite(sitesResult.data[0]);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading data:', error);
+      }
+    };
+    loadData();
+  }, []);
+
+  const handleConfirmParking = async () => {
+    if (!selectedVehicle || !selectedSite) {
+      alert('Please select a vehicle and parking site.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const parkingResponse = await fetch(`${API_BASE_URL}/api/parking-request`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          user_id: DEMO_USER_ID,
+          vehicle_id: selectedVehicle.id,
+          site_id: selectedSite.id,
+          payment_amount: selectedSite.fixed_parking_fee
+        })
+      });
+
+      const parkingResult = await parkingResponse.json();
+
+      if (parkingResult.success) {
+        router.push('/user/ticket');
+      } else {
+        alert('Failed to create parking session: ' + parkingResult.error);
+      }
+    } catch (error) {
+      console.error('Error creating parking session:', error);
+      alert('Failed to create parking session. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="flex flex-col h-full">
@@ -47,11 +120,11 @@ export default function ConfirmParkingPage() {
             </div>
             <div className="flex justify-between">
               <span className="text-gray-500">Vehicle</span>
-              <span className="font-medium text-gray-900">Toyota Camry</span>
+              <span className="font-medium text-gray-900">{selectedVehicle?.vehicle_name || 'Loading...'}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-500">Number Plate</span>
-              <span className="font-medium text-gray-900">MH 12 AB 1234</span>
+              <span className="font-medium text-gray-900">{selectedVehicle?.plate_number || 'Loading...'}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-500">Mobile</span>
@@ -69,9 +142,24 @@ export default function ConfirmParkingPage() {
           </div>
           
           <div>
-            <p className="font-semibold text-gray-900">Inorbit Mall</p>
-            <p className="text-sm text-gray-500 mt-1">Malad West, Mumbai</p>
+            <p className="font-semibold text-gray-900">{selectedSite?.name || 'Loading...'}</p>
+            <p className="text-sm text-gray-500 mt-1">{selectedSite?.address || ''}, {selectedSite?.city || ''}</p>
           </div>
+        </div>
+
+        <div className="bg-white rounded-2xl shadow-sm p-5 mb-6">
+          <div className="flex items-center gap-2 mb-4">
+            <svg className="w-5 h-5 text-gray-700" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" />
+            </svg>
+            <h2 className="font-semibold text-gray-900">Parking Fee</h2>
+          </div>
+          
+          <div className="flex justify-between items-center">
+            <span className="text-gray-600">Fixed Parking Fee</span>
+            <span className="text-2xl font-bold text-green-600">₹{selectedSite?.fixed_parking_fee || '0'}</span>
+          </div>
+          <p className="text-sm text-gray-500 mt-2">This amount will be charged immediately upon confirmation</p>
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm p-5 mb-6">
@@ -144,11 +232,13 @@ export default function ConfirmParkingPage() {
                 Cancel
               </button>
             </Link>
-            <Link href="/user/ticket" className="flex-1">
-              <button className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-semibold">
-                Confirm Parking
-              </button>
-            </Link>
+            <button
+              onClick={handleConfirmParking}
+              disabled={loading}
+              className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white rounded-2xl font-semibold"
+            >
+              {loading ? 'Creating...' : 'Confirm Parking'}
+            </button>
           </div>
         </div>
         </div>

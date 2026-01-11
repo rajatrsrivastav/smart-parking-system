@@ -14,7 +14,31 @@ export const getDriverRequests = async (req, res) => {
           parking_sites(name, address)
         )
       `)
-      .eq('status', 'pending')
+      .eq('status', 'assigned')
+      .order('assigned_at', { ascending: true });
+
+    if (error) throw error;
+    res.json({ success: true, data });
+  } catch (error) {
+    res.status(500).json({ success: false, error: friendlyErrorMessage(error) });
+  }
+};
+
+export const getDriverActiveAssignments = async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('valet_assignments')
+      .select(`
+        *,
+        parking_sessions(
+          *,
+          users(name, phone),
+          vehicles(vehicle_name, plate_number),
+          parking_sites(name, address)
+        )
+      `)
+      .eq('driver_id', req.params.driverId)
+      .in('status', ['in_progress'])
       .order('assigned_at', { ascending: true });
 
     if (error) throw error;
@@ -31,7 +55,7 @@ export const acceptRequest = async (req, res) => {
     const { data, error } = await supabase
       .from('valet_assignments')
       .update({
-        status: 'accepted',
+        status: 'in_progress',
         driver_id
       })
       .eq('id', req.params.requestId)

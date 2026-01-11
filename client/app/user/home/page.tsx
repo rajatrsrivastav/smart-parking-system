@@ -10,29 +10,36 @@ const DEMO_USER_ID = 'd7eb7b17-6d46-4df7-8b43-c50206863e28'
 
 export default function UserHomePage() {
   const [parkingHistory, setParkingHistory] = useState<any[]>([]);
+  const [activeSession, setActiveSession] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadHistory();
+    loadData();
   }, []);
 
-  const loadHistory = async () => {
+  const loadData = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/my-history/${DEMO_USER_ID}`);
-      const result = await response.json();
-      if (result.success && result.data) {
-        setParkingHistory(result.data);
+      const sessionResponse = await fetch(`${API_BASE_URL}/api/my-session/${DEMO_USER_ID}`);
+      const sessionResult = await sessionResponse.json();
+      if (sessionResult.success) {
+        setActiveSession(sessionResult.data);
+      }
+
+      const historyResponse = await fetch(`${API_BASE_URL}/api/my-history/${DEMO_USER_ID}`);
+      const historyResult = await historyResponse.json();
+      if (historyResult.success && historyResult.data) {
+        setParkingHistory(historyResult.data);
       }
     } catch (error) {
-      console.error('Failed to load history:', error);
+      console.error('Failed to load data:', error);
     }
     setLoading(false);
   };
 
-  const formatDuration = (entryTime: string, exitTime: string) => {
+  const formatDuration = (entryTime: string, exitTime?: string) => {
     const entry = new Date(entryTime);
-    const exit = new Date(exitTime);
+    const exit = exitTime ? new Date(exitTime) : new Date();
     const diffMs = exit.getTime() - entry.getTime();
     const hours = Math.floor(diffMs / (1000 * 60 * 60));
     const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
@@ -55,7 +62,6 @@ export default function UserHomePage() {
             <div className="flex items-center gap-3">
               <div className="text-4xl"><Car size={50}/></div>
               <div>
-                <p className="text-xs text-indigo-100">1M+ in India</p>
                 <p className="text-base font-semibold">Premium Parking Solution</p>
                 <p className="text-xs text-indigo-100">Trusted by 1M+ users nationwide</p>
               </div>
@@ -82,6 +88,50 @@ export default function UserHomePage() {
           </Link>
 
           <div className="mt-8">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Active Parking</h2>
+
+            {loading ? (
+              <div className="text-center py-8 text-gray-500">Loading...</div>
+            ) : activeSession ? (
+              <Link href="/user/ticket">
+                <div className="bg-gradient-to-br from-indigo-600 to-indigo-700 text-white rounded-2xl shadow-sm p-5 mb-6 active:scale-95 transition-transform">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                    <span className="font-semibold">Active Parking Session</span>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-green-100">Location</span>
+                      <span className="font-medium">{activeSession.parking_sites?.name}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-green-100">Vehicle</span>
+                      <span className="font-medium">{activeSession.vehicles?.plate_number}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-green-100">Spot</span>
+                      <span className="font-medium">{activeSession.parking_spot || 'Assigning...'}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-green-100">Duration</span>
+                      <span className="font-medium">{formatDuration(activeSession.entry_time, new Date().toISOString())}</span>
+                    </div>
+                  </div>
+                  <div className="mt-4 text-center">
+                    <span className="text-sm text-green-100">Tap to view ticket</span>
+                  </div>
+                </div>
+              </Link>
+            ) : (
+              <div className="bg-gray-100 rounded-2xl shadow-sm p-8 text-center mb-6">
+                <svg className="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                <p className="text-gray-600 font-medium">No Active Parking</p>
+                <p className="text-sm text-gray-500 mt-1">Your parked vehicles will appear here</p>
+              </div>
+            )}
+
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Recent Parking</h2>
             
             {loading ? (

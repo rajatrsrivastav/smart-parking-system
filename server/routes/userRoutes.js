@@ -2,6 +2,7 @@ import express from 'express';
 import {
   getSites,
   getUserVehicles,
+  getUserProfile,
   createVehicle,
   createParkingRequest,
   getMySession,
@@ -13,6 +14,7 @@ import {
 const router = express.Router();
 
 router.get('/sites', getSites);
+router.get('/users/:userId/profile', getUserProfile);
 router.get('/users/:userId/vehicles', getUserVehicles);
 router.post('/users/:userId/vehicles', createVehicle);
 router.post('/parking-request', createParkingRequest);

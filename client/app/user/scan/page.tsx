@@ -40,12 +40,15 @@ export default function ScanQRPage() {
     }
   }, [showVehicleSelect]);
 
-  const handleScan = () => {
-    setTimeout(() => {
+  useEffect(() => {
+    // Automatically start scanning animation
+    const timer = setTimeout(() => {
       setScanned(true);
       setShowVehicleSelect(true);
-    }, 1500);
-  };
+    }, 3000); // 3 seconds for scanning
+
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <div className="h-full bg-gray-900 text-white relative flex flex-col">
@@ -83,7 +86,7 @@ export default function ScanQRPage() {
           </div>
           
           {!scanned && (
-            <div className="absolute inset-x-0 top-1/2 h-1 bg-indigo-500 animate-pulse"></div>
+            <div className="absolute inset-x-0 h-1 bg-indigo-500" style={{ animation: 'scan 2s ease-in-out infinite', top: '0' }}></div>
           )}
         </div>
       </div>
@@ -91,16 +94,8 @@ export default function ScanQRPage() {
       {!showVehicleSelect && (
         <div className="absolute bottom-20 left-0 right-0 text-center px-6">
           <p className="text-gray-300 mb-8">
-            {scanned ? 'QR Code Detected!' : 'Position QR code within frame'}
+            {scanned ? 'QR Code Detected!' : 'Scanning for QR code...'}
           </p>
-          {!scanned && (
-            <button
-              onClick={handleScan}
-              className="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 rounded-full font-semibold"
-            >
-              Simulate Scan
-            </button>
-          )}
           {scanned && <p className="text-indigo-400 font-semibold">Inorbit Mall</p>}
         </div>
       )}
@@ -142,7 +137,7 @@ export default function ScanQRPage() {
           </div>
 
           <Link
-            href="/user/register-vehicle"
+            href="/user/vehicles"
             className="block w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white text-center rounded-2xl font-semibold"
           >
             Register New Vehicle
