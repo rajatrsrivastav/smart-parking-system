@@ -103,7 +103,7 @@ export default function ScanQRPage() {
             ) : vehicles.length === 0 ? (
               <div className="text-center py-8 text-gray-500">No vehicles found</div>
             ) : (
-              vehicles.map((vehicle) => (
+              vehicles.map((vehicle: Vehicle) => (
                 <Link
                   key={vehicle.id}
                   href="/user/confirm-parking"

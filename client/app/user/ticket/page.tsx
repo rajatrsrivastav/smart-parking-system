@@ -109,31 +109,6 @@ export default function TicketPage() {
     retrievalMutation.mutate(session.id);
   };
 
-  const handleMockPayment = async (sessionId: string) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/mock-payment`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          session_id: sessionId,
-          amount: 150
-        })
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        loadActiveSession();
-      } else {
-        console.error('Failed to complete payment:', result.error);
-      }
-    } catch (error) {
-      console.error('Error completing payment:', error);
-    }
-  };
-
   if (loading) {
     return (
       <div className="flex flex-col h-full">

@@ -197,9 +197,9 @@ export default function VehiclesPage() {
             </div>
           ) : error ? (
             <div className="bg-red-50 border border-red-200 rounded-2xl p-4 mb-6">
-              <p className="text-red-700 text-sm">{error}</p>
+              <p className="text-red-700 text-sm">{error.message}</p>
               <button
-                onClick={loadVehicles}
+                onClick={() => queryClient.invalidateQueries({ queryKey: ['user', DEMO_USER_ID, 'vehicles'] })}
                 className="mt-2 text-sm font-semibold text-red-600 hover:text-red-700"
               >
                 Try again →
@@ -231,7 +231,7 @@ export default function VehiclesPage() {
             </div>
           ) : (
             <div className="space-y-4">
-              {vehicles.map((vehicle) => (
+              {vehicles.map((vehicle: Vehicle) => (
                 <div
                   key={vehicle.id}
                   className="bg-white border-2 border-gray-100 rounded-2xl p-5 hover:shadow-md transition-shadow"
@@ -328,7 +328,7 @@ export default function VehiclesPage() {
                   onChange={(e) => setFormData({ ...formData, vehicle_name: e.target.value })}
                   placeholder="e.g., Toyota Camry"
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  disabled={submitting}
+                  disabled={createVehicleMutation.isPending}
                 />
               </div>
 
@@ -340,7 +340,7 @@ export default function VehiclesPage() {
                   onChange={(e) => setFormData({ ...formData, plate_number: e.target.value })}
                   placeholder="e.g., MH 12 AB 1234"
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  disabled={submitting}
+                  disabled={createVehicleMutation.isPending}
                 />
               </div>
 
@@ -350,7 +350,7 @@ export default function VehiclesPage() {
                   value={formData.vehicle_type}
                   onChange={(e) => setFormData({ ...formData, vehicle_type: e.target.value })}
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  disabled={submitting}
+                  disabled={createVehicleMutation.isPending}
                 >
                   <option value="sedan">Sedan</option>
                   <option value="suv">SUV</option>
@@ -365,7 +365,7 @@ export default function VehiclesPage() {
               <button
                 onClick={closeAddModal}
                 className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-semibold transition-colors"
-                disabled={submitting}
+                disabled={createVehicleMutation.isPending}
               >
                 Cancel
               </button>
@@ -415,7 +415,7 @@ export default function VehiclesPage() {
                   onChange={(e) => setFormData({ ...formData, vehicle_name: e.target.value })}
                   placeholder="e.g., Toyota Camry"
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  disabled={submitting}
+                  disabled={updateVehicleMutation.isPending}
                 />
               </div>
 
@@ -427,7 +427,7 @@ export default function VehiclesPage() {
                   onChange={(e) => setFormData({ ...formData, plate_number: e.target.value })}
                   placeholder="e.g., MH 12 AB 1234"
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  disabled={submitting}
+                  disabled={updateVehicleMutation.isPending}
                 />
               </div>
 
@@ -437,7 +437,7 @@ export default function VehiclesPage() {
                   value={formData.vehicle_type}
                   onChange={(e) => setFormData({ ...formData, vehicle_type: e.target.value })}
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  disabled={submitting}
+                  disabled={updateVehicleMutation.isPending}
                 >
                   <option value="sedan">Sedan</option>
                   <option value="suv">SUV</option>
@@ -456,7 +456,7 @@ export default function VehiclesPage() {
                   setFormError(null);
                 }}
                 className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-semibold transition-colors"
-                disabled={submitting}
+                disabled={updateVehicleMutation.isPending}
               >
                 Cancel
               </button>
@@ -506,7 +506,7 @@ export default function VehiclesPage() {
                   setFormError(null);
                 }}
                 className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-semibold transition-colors"
-                disabled={submitting}
+                disabled={deleteVehicleMutation.isPending}
               >
                 Keep
               </button>

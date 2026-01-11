@@ -67,7 +67,7 @@ export default function HistoryPage() {
                   <p className="text-gray-500">No parking history found</p>
                 </div>
               ) : (
-                parkingHistory.map((parking) => (
+                parkingHistory.map((parking: ParkingHistory) => (
                   <div key={parking.id} className="bg-white rounded-2xl shadow-sm p-4">
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex-1">
