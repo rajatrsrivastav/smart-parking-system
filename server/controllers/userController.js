@@ -175,14 +175,13 @@ export const requestRetrieval = async (req, res) => {
     if (!session) throw new Error('Session not found');
     if (session.payment_status !== 'completed') throw new Error('Payment required before retrieval');
 
-    // Create valet assignment for retrieval
     const { data: assignment, error: assignmentError } = await supabase
       .from('valet_assignments')
       .insert([{
         session_id,
         driver_id: null,
         assignment_type: 'retrieve',
-        status: 'assigned',  // Changed from 'pending' temporarily
+        status: 'assigned', 
         assigned_at: new Date().toISOString()
       }])
       .select()
@@ -190,7 +189,6 @@ export const requestRetrieval = async (req, res) => {
 
     if (assignmentError) throw assignmentError;
 
-    // Update the session status to indicate retrieval requested
     const { error: updateError } = await supabase
       .from('parking_sessions')
       .update({ status: 'retrieval_requested' })
