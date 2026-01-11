@@ -67,7 +67,6 @@ export default function TicketPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user', DEMO_USER_ID, 'session'] });
-      router.push('/user/retrieval');
     },
   });
 
@@ -170,7 +169,7 @@ export default function TicketPage() {
           <div className="flex items-center gap-2 mb-2">
             <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
             <span className="font-semibold">
-              {session.status === 'retrieval_requested' ? 'Retrieval Requested' : 'Active Parking Session'}
+              {session.status === 'retrieval_requested' ? 'Waiting for Driver' : 'Active Parking Session'}
             </span>
           </div>
           {session.status === 'retrieval_requested' && (
