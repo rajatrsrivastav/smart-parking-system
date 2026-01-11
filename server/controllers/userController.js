@@ -62,7 +62,6 @@ export const createParkingRequest = async (req, res) => {
   try {
     const { user_id, vehicle_id, site_id, payment_amount } = req.body;
 
-    // Check if user already has an active session
     const { data: existingSession, error: checkError } = await supabase
       .from('parking_sessions')
       .select('id, status')
@@ -78,7 +77,6 @@ export const createParkingRequest = async (req, res) => {
       });
     }
 
-    // First, get the site's fixed parking fee
     const { data: site, error: siteError } = await supabase
       .from('parking_sites')
       .select('fixed_parking_fee')
@@ -114,7 +112,6 @@ export const createParkingRequest = async (req, res) => {
 
     if (sessionError) throw sessionError;
 
-    // Create payment record
     const { error: paymentError } = await supabase
       .from('parking_payments')
       .insert([{
@@ -128,23 +125,6 @@ export const createParkingRequest = async (req, res) => {
       }]);
 
     if (paymentError) throw paymentError;
-
-    // For now, skip valet assignment creation to avoid driver_id constraint issues
-    // const { data: assignment, error: assignmentError } = await supabase
-    //   .from('valet_assignments')
-    //   .insert([{
-    //     session_id: session.id,
-    //     driver_id: null,
-    //     assignment_type: 'park',
-    //     status: 'pending',
-    //     assigned_at: new Date().toISOString()
-    //   }])
-    //   .select()
-    //   .single();
-
-    // if (assignmentError) throw assignmentError;
-
-    // Ensure the parking_fee is set in the response
     const responseSession = {
       ...session,
       parking_fee: parkingFee,

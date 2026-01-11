@@ -41,11 +41,10 @@ export default function ScanQRPage() {
   }, [showVehicleSelect]);
 
   useEffect(() => {
-    // Automatically start scanning animation
     const timer = setTimeout(() => {
       setScanned(true);
       setShowVehicleSelect(true);
-    }, 3000); // 3 seconds for scanning
+    }, 3000); 
 
     return () => clearTimeout(timer);
   }, []);

@@ -4,6 +4,9 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import BottomNav from '@/components/BottomNav';
+import { API_BASE_URL } from '@/lib/api';
+
+const DEMO_USER_ID = 'd7eb7b17-6d46-4df7-8b43-c50206863e28'
 
 interface UserData {
   id: string;
@@ -26,7 +29,7 @@ export default function SettingsPage() {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const profileResponse = await fetch(`http://localhost:4000/api/users/${'d7eb7b17-6d46-4df7-8b43-c50206863e28'}/profile`);
+        const profileResponse = await fetch(`${API_BASE_URL}/api/users/${DEMO_USER_ID}/profile`);
         if (profileResponse.ok) {
           const profileResult = await profileResponse.json();
           if (profileResult.success) {
@@ -34,7 +37,7 @@ export default function SettingsPage() {
           }
         }
 
-        const vehiclesResponse = await fetch(`http://localhost:4000/api/users/${'d7eb7b17-6d46-4df7-8b43-c50206863e28'}/vehicles`);
+        const vehiclesResponse = await fetch(`${API_BASE_URL}/api/users/${DEMO_USER_ID}/vehicles`);
         if (vehiclesResponse.ok) {
           const vehiclesResult = await vehiclesResponse.json();
           if (vehiclesResult.success) {
