@@ -18,6 +18,10 @@ app.use(cors({
 }));
 app.use(express.json());
 
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'OK', message: 'Server is running' });
+});
+
 app.use('/api', userRoutes);
 app.use('/api', driverRoutes);
 app.use('/api', dashboardRoutes);

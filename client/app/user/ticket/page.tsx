@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import BottomNav from '@/components/BottomNav';
 import { API_BASE_URL } from '@/lib/api';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 const DEMO_USER_ID = 'd7eb7b17-6d46-4df7-8b43-c50206863e28';
 
@@ -20,32 +21,61 @@ interface ParkingSession {
 }
 
 export default function TicketPage() {
-  const [session, setSession] = useState<ParkingSession | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [retrievalLoading, setRetrievalLoading] = useState(false);
   const router = useRouter();
+  const queryClient = useQueryClient();
 
-  const loadActiveSession = async () => {
-    try {
+  const { data: session, isLoading: loading } = useQuery({
+    queryKey: ['user', DEMO_USER_ID, 'session'],
+    queryFn: async () => {
       const response = await fetch(`${API_BASE_URL}/api/my-session/${DEMO_USER_ID}`);
+      if (!response.ok) throw new Error('Failed to fetch session');
       const result = await response.json();
-      if (result.success) {
-        const sessionData = result.data;
-        setSession(sessionData);
+      if (!result.success) throw new Error(result.error || 'Failed to fetch session');
+      return result.data;
+    },
+    refetchInterval: 30000, // Refetch every 30 seconds
+  });
 
-        if (sessionData && sessionData.payment_status === 'pending') {
-          await handleMockPayment(sessionData.id);
-        }
-      }
-    } catch (error) {
-      console.error('Failed to load session:', error);
-    }
-    setLoading(false);
-  };
+  const mockPaymentMutation = useMutation({
+    mutationFn: async (sessionId: string) => {
+      const response = await fetch(`${API_BASE_URL}/api/mock-payment`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_id: sessionId, amount: 50 }),
+      });
+      if (!response.ok) throw new Error('Payment failed');
+      const result = await response.json();
+      if (!result.success) throw new Error(result.error);
+      return result.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user', DEMO_USER_ID, 'session'] });
+    },
+  });
+
+  const retrievalMutation = useMutation({
+    mutationFn: async (sessionId: string) => {
+      const response = await fetch(`${API_BASE_URL}/api/request-retrieval`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_id: sessionId, user_id: DEMO_USER_ID }),
+      });
+      if (!response.ok) throw new Error('Retrieval request failed');
+      const result = await response.json();
+      if (!result.success) throw new Error(result.error);
+      return result;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user', DEMO_USER_ID, 'session'] });
+      router.push('/user/retrieval');
+    },
+  });
 
   useEffect(() => {
-    loadActiveSession();
-  }, []);
+    if (session && session.payment_status === 'pending') {
+      mockPaymentMutation.mutate(session.id);
+    }
+  }, [session]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -74,36 +104,9 @@ export default function TicketPage() {
     return `${hours}h ${minutes}m`;
   };
 
-  const handleRequestRetrieval = async () => {
+  const handleRequestRetrieval = () => {
     if (!session) return;
-
-    setRetrievalLoading(true);
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/request-retrieval`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          session_id: session.id,
-          user_id: DEMO_USER_ID
-        })
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        alert('Retrieval request submitted! A driver will bring your car soon.');
-        loadActiveSession();
-      } else {
-        alert('Failed to request retrieval: ' + result.error);
-      }
-    } catch (error) {
-      console.error('Error requesting retrieval:', error);
-      alert('Failed to request retrieval. Please try again.');
-    } finally {
-      setRetrievalLoading(false);
-    }
+    retrievalMutation.mutate(session.id);
   };
 
   const handleMockPayment = async (sessionId: string) => {
@@ -325,10 +328,10 @@ export default function TicketPage() {
             ) : (
               <button
                 onClick={handleRequestRetrieval}
-                disabled={retrievalLoading}
+                disabled={retrievalMutation.isPending}
                 className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white rounded-2xl font-semibold flex items-center justify-center gap-2"
               >
-                {retrievalLoading ? (
+                {retrievalMutation.isPending ? (
                   <>
                     <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>

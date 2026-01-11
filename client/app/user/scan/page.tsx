@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { API_BASE_URL } from '@/lib/api';
+import { useQuery } from '@tanstack/react-query';
 
 const DEMO_USER_ID = 'd7eb7b17-6d46-4df7-8b43-c50206863e28';
 
@@ -17,28 +18,19 @@ export default function ScanQRPage() {
   const router = useRouter();
   const [scanned, setScanned] = useState(false);
   const [showVehicleSelect, setShowVehicleSelect] = useState(false);
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [loading, setLoading] = useState(false);
 
-  const loadVehicles = async () => {
-    setLoading(true);
-    try {
+  const { data: vehicles = [], isLoading: loading } = useQuery({
+    queryKey: ['user', DEMO_USER_ID, 'vehicles'],
+    queryFn: async () => {
       const response = await fetch(`${API_BASE_URL}/api/users/${DEMO_USER_ID}/vehicles`);
+      if (!response.ok) throw new Error('Failed to fetch vehicles');
       const result = await response.json();
-      if (result.success && result.data) {
-        setVehicles(result.data);
-      }
-    } catch (error) {
-      console.error('Failed to load vehicles:', error);
-    }
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    if (showVehicleSelect) {
-      loadVehicles();
-    }
-  }, [showVehicleSelect]);
+      if (!result.success) throw new Error(result.error);
+      return result.data || [];
+    },
+    enabled: showVehicleSelect, // Only fetch when vehicle select is shown
+    staleTime: 5 * 60 * 1000,
+  });
 
   useEffect(() => {
     const timer = setTimeout(() => {

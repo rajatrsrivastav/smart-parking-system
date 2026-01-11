@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import BottomNav from '@/components/BottomNav';
 import { API_BASE_URL } from '@/lib/api';
+import { useQuery } from '@tanstack/react-query';
 
 const DEMO_USER_ID = 'd7eb7b17-6d46-4df7-8b43-c50206863e28'
 
@@ -22,38 +23,33 @@ interface VehicleCount {
 
 export default function SettingsPage() {
   const router = useRouter();
-  const [userData, setUserData] = useState<UserData | null>(null);
-  const [vehicleCount, setVehicleCount] = useState<number>(0);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const profileResponse = await fetch(`${API_BASE_URL}/api/users/${DEMO_USER_ID}/profile`);
-        if (profileResponse.ok) {
-          const profileResult = await profileResponse.json();
-          if (profileResult.success) {
-            setUserData(profileResult.data);
-          }
-        }
+  const { data: userData, isLoading: userLoading } = useQuery({
+    queryKey: ['user', DEMO_USER_ID, 'profile'],
+    queryFn: async () => {
+      const response = await fetch(`${API_BASE_URL}/api/users/${DEMO_USER_ID}/profile`);
+      if (!response.ok) throw new Error('Failed to fetch profile');
+      const result = await response.json();
+      if (!result.success) throw new Error(result.error);
+      return result.data;
+    },
+    staleTime: 10 * 60 * 1000, // 10 minutes, since profile doesn't change often
+  });
 
-        const vehiclesResponse = await fetch(`${API_BASE_URL}/api/users/${DEMO_USER_ID}/vehicles`);
-        if (vehiclesResponse.ok) {
-          const vehiclesResult = await vehiclesResponse.json();
-          if (vehiclesResult.success) {
-            setVehicleCount(vehiclesResult.data.length);
-          }
-        }
+  const { data: vehicles, isLoading: vehiclesLoading } = useQuery({
+    queryKey: ['user', DEMO_USER_ID, 'vehicles'],
+    queryFn: async () => {
+      const response = await fetch(`${API_BASE_URL}/api/users/${DEMO_USER_ID}/vehicles`);
+      if (!response.ok) throw new Error('Failed to fetch vehicles');
+      const result = await response.json();
+      if (!result.success) throw new Error(result.error);
+      return result.data;
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
 
-      } catch (error) {
-        console.error('Error fetching user data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUserData();
-  }, []);
+  const vehicleCount = vehicles?.length || 0;
+  const loading = userLoading || vehiclesLoading;
 
   return (
     <div className="flex flex-col h-full">

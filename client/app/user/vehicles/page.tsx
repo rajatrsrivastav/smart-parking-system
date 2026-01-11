@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import BottomNav from '@/components/BottomNav';
 import { API_BASE_URL } from '@/lib/api';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 const DEMO_USER_ID = 'd7eb7b17-6d46-4df7-8b43-c50206863e28';
 
@@ -26,9 +27,7 @@ interface FormData {
 
 export default function VehiclesPage() {
   const router = useRouter();
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -40,126 +39,107 @@ export default function VehiclesPage() {
     plate_number: '',
     vehicle_type: 'sedan'
   });
-  const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
-  const loadVehicles = async () => {
-    setLoading(true);
-    setError(null);
-    try {
+  const { data: vehicles = [], isLoading: loading, error } = useQuery({
+    queryKey: ['user', DEMO_USER_ID, 'vehicles'],
+    queryFn: async () => {
       const response = await fetch(`${API_BASE_URL}/api/users/${DEMO_USER_ID}/vehicles`);
+      if (!response.ok) throw new Error('Failed to fetch vehicles');
       const result = await response.json();
-      if (result.success && result.data) {
-        setVehicles(result.data);
-      } else {
-        throw new Error(result.error || 'Failed to load vehicles');
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load vehicles');
-    } finally {
-      setLoading(false);
-    }
-  };
+      if (!result.success) throw new Error(result.error || 'Failed to fetch vehicles');
+      return result.data || [];
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
 
-  useEffect(() => {
-    loadVehicles();
-  }, []);
-
-  const handleAddVehicle = async () => {
-    if (!formData.vehicle_name.trim() || !formData.plate_number.trim()) {
-      setFormError('Vehicle name and plate number are required');
-      return;
-    }
-
-    setSubmitting(true);
-    setFormError(null);
-    try {
+  const createVehicleMutation = useMutation({
+    mutationFn: async (vehicleData: FormData) => {
       const response = await fetch(`${API_BASE_URL}/api/users/${DEMO_USER_ID}/vehicles`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...formData,
-          user_id: DEMO_USER_ID
-        })
+        body: JSON.stringify(vehicleData),
       });
-
+      if (!response.ok) throw new Error('Failed to create vehicle');
       const result = await response.json();
+      if (!result.success) throw new Error(result.error);
+      return result.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user', DEMO_USER_ID, 'vehicles'] });
+      setShowAddModal(false);
+      setFormData({ vehicle_name: '', plate_number: '', vehicle_type: 'sedan' });
+      setFormError(null);
+    },
+    onError: (error: Error) => {
+      setFormError(error.message);
+    },
+  });
 
-      if (result.success && result.data) {
-        setVehicles([...vehicles, result.data]);
-        setShowAddModal(false);
-        setFormData({ vehicle_name: '', plate_number: '', vehicle_type: 'sedan' });
-        setFormError(null);
-      } else {
-        throw new Error(result.error || 'Failed to add vehicle');
-      }
-    } catch (err) {
-      setFormError(err instanceof Error ? err.message : 'Failed to add vehicle');
-    } finally {
-      setSubmitting(false);
+  const updateVehicleMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: FormData }) => {
+      const response = await fetch(`${API_BASE_URL}/api/vehicles/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) throw new Error('Failed to update vehicle');
+      const result = await response.json();
+      if (!result.success) throw new Error(result.error);
+      return result.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user', DEMO_USER_ID, 'vehicles'] });
+      setShowEditModal(false);
+      setSelectedVehicle(null);
+      setFormData({ vehicle_name: '', plate_number: '', vehicle_type: 'sedan' });
+      setFormError(null);
+    },
+    onError: (error: Error) => {
+      setFormError(error.message);
+    },
+  });
+
+  const deleteVehicleMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const response = await fetch(`${API_BASE_URL}/api/vehicles/${id}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) throw new Error('Failed to delete vehicle');
+      const result = await response.json();
+      if (!result.success) throw new Error(result.error);
+      return result.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user', DEMO_USER_ID, 'vehicles'] });
+      setShowDeleteConfirm(false);
+      setSelectedVehicle(null);
+    },
+  });
+
+  const handleAddVehicle = () => {
+    if (!formData.vehicle_name.trim() || !formData.plate_number.trim()) {
+      setFormError('Vehicle name and plate number are required');
+      return;
     }
+    setFormError(null);
+    createVehicleMutation.mutate(formData);
   };
 
-  const handleEditVehicle = async () => {
+  const handleEditVehicle = () => {
     if (!selectedVehicle) return;
     if (!formData.vehicle_name.trim() || !formData.plate_number.trim()) {
       setFormError('Vehicle name and plate number are required');
       return;
     }
-
-    setSubmitting(true);
     setFormError(null);
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/vehicles/${selectedVehicle.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
-      });
-
-      const result = await response.json();
-
-      if (result.success && result.data) {
-        setVehicles(vehicles.map(v => v.id === selectedVehicle.id ? result.data : v));
-        setShowEditModal(false);
-        setSelectedVehicle(null);
-        setFormData({ vehicle_name: '', plate_number: '', vehicle_type: 'sedan' });
-        setFormError(null);
-      } else {
-        throw new Error(result.error || 'Failed to update vehicle');
-      }
-    } catch (err) {
-      setFormError(err instanceof Error ? err.message : 'Failed to update vehicle');
-    } finally {
-      setSubmitting(false);
-    }
+    updateVehicleMutation.mutate({ id: selectedVehicle.id, data: formData });
   };
 
-  const handleDeleteVehicle = async () => {
+  const handleDeleteVehicle = () => {
     if (!selectedVehicle) return;
-
-    setSubmitting(true);
     setFormError(null);
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/vehicles/${selectedVehicle.id}`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' }
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        setVehicles(vehicles.filter(v => v.id !== selectedVehicle.id));
-        setShowDeleteConfirm(false);
-        setSelectedVehicle(null);
-        setFormError(null);
-      } else {
-        throw new Error(result.error || 'Failed to delete vehicle');
-      }
-    } catch (err) {
-      setFormError(err instanceof Error ? err.message : 'Failed to delete vehicle');
-    } finally {
-      setSubmitting(false);
-    }
+    deleteVehicleMutation.mutate(selectedVehicle.id);
   };
 
   const openEditModal = (vehicle: Vehicle) => {
@@ -392,9 +372,9 @@ export default function VehiclesPage() {
               <button
                 onClick={handleAddVehicle}
                 className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-semibold transition-colors disabled:opacity-50"
-                disabled={submitting}
+                disabled={createVehicleMutation.isPending}
               >
-                {submitting ? 'Adding...' : 'Add Vehicle'}
+                {createVehicleMutation.isPending ? 'Adding...' : 'Add Vehicle'}
               </button>
             </div>
           </div>
@@ -483,9 +463,9 @@ export default function VehiclesPage() {
               <button
                 onClick={handleEditVehicle}
                 className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-semibold transition-colors disabled:opacity-50"
-                disabled={submitting}
+                disabled={updateVehicleMutation.isPending}
               >
-                {submitting ? 'Saving...' : 'Save Changes'}
+                {updateVehicleMutation.isPending ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
           </div>
@@ -533,9 +513,9 @@ export default function VehiclesPage() {
               <button
                 onClick={handleDeleteVehicle}
                 className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-semibold transition-colors disabled:opacity-50"
-                disabled={submitting}
+                disabled={deleteVehicleMutation.isPending}
               >
-                {submitting ? 'Removing...' : 'Remove'}
+                {deleteVehicleMutation.isPending ? 'Removing...' : 'Remove'}
               </button>
             </div>
           </div>

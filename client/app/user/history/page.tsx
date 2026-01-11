@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import BottomNav from '@/components/BottomNav';
 import { API_BASE_URL } from '@/lib/api';
+import { useQuery } from '@tanstack/react-query';
 
 const DEMO_USER_ID = 'd7eb7b17-6d46-4df7-8b43-c50206863e28';
 
@@ -20,25 +21,18 @@ interface ParkingHistory {
 
 export default function HistoryPage() {
   const router = useRouter();
-  const [parkingHistory, setParkingHistory] = useState<ParkingHistory[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  const loadHistory = async () => {
-    try {
+  const { data: parkingHistory = [], isLoading: loading } = useQuery({
+    queryKey: ['user', DEMO_USER_ID, 'history'],
+    queryFn: async () => {
       const response = await fetch(`${API_BASE_URL}/api/my-history/${DEMO_USER_ID}`);
+      if (!response.ok) throw new Error('Failed to fetch history');
       const result = await response.json();
-      if (result.success && result.data) {
-        setParkingHistory(result.data);
-      }
-    } catch (error) {
-      console.error('Failed to load history:', error);
-    }
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    loadHistory();
-  }, []);
+      if (!result.success) throw new Error(result.error || 'Failed to fetch history');
+      return result.data || [];
+    },
+    staleTime: 2 * 60 * 1000, // 2 minutes
+  });
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);

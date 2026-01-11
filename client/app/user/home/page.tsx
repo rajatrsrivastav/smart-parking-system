@@ -5,37 +5,34 @@ import Link from 'next/link';
 import BottomNav from '@/components/BottomNav';
 import {Car} from 'lucide-react'
 import { API_BASE_URL } from '@/lib/api';
+import { useQuery } from '@tanstack/react-query';
 
 const DEMO_USER_ID = 'd7eb7b17-6d46-4df7-8b43-c50206863e28'
 
 export default function UserHomePage() {
-  const [parkingHistory, setParkingHistory] = useState<any[]>([]);
-  const [activeSession, setActiveSession] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const { data: activeSession, isLoading: sessionLoading } = useQuery({
+    queryKey: ['user', DEMO_USER_ID, 'session'],
+    queryFn: async () => {
+      const response = await fetch(`${API_BASE_URL}/api/my-session/${DEMO_USER_ID}`);
+      if (!response.ok) throw new Error('Failed to fetch session');
+      const result = await response.json();
+      return result.success ? result.data : null;
+    },
+    refetchInterval: 30000, // Refetch every 30 seconds for active session
+  });
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  const { data: parkingHistory, isLoading: historyLoading } = useQuery({
+    queryKey: ['user', DEMO_USER_ID, 'history'],
+    queryFn: async () => {
+      const response = await fetch(`${API_BASE_URL}/api/my-history/${DEMO_USER_ID}`);
+      if (!response.ok) throw new Error('Failed to fetch history');
+      const result = await response.json();
+      return result.success ? result.data : [];
+    },
+    staleTime: 2 * 60 * 1000, // 2 minutes
+  });
 
-  const loadData = async () => {
-    setLoading(true);
-    try {
-      const sessionResponse = await fetch(`${API_BASE_URL}/api/my-session/${DEMO_USER_ID}`);
-      const sessionResult = await sessionResponse.json();
-      if (sessionResult.success) {
-        setActiveSession(sessionResult.data);
-      }
-
-      const historyResponse = await fetch(`${API_BASE_URL}/api/my-history/${DEMO_USER_ID}`);
-      const historyResult = await historyResponse.json();
-      if (historyResult.success && historyResult.data) {
-        setParkingHistory(historyResult.data);
-      }
-    } catch (error) {
-      console.error('Failed to load data:', error);
-    }
-    setLoading(false);
-  };
+  const loading = sessionLoading || historyLoading;
 
   const formatDuration = (entryTime: string, exitTime?: string) => {
     const entry = new Date(entryTime);

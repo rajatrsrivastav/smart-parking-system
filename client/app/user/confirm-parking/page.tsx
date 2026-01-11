@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { API_BASE_URL } from '@/lib/api';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 const DEMO_USER_ID = 'd7eb7b17-6d46-4df7-8b43-c50206863e28';
 const DEMO_VEHICLE_ID = 'vehicle-id-here';
@@ -11,74 +12,76 @@ const DEMO_SITE_ID = 'site-id-here';
 
 export default function ConfirmParkingPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
+
   const [selectedPayment, setSelectedPayment] = useState('upi');
-  const [loading, setLoading] = useState(false);
-  const [sites, setSites] = useState<any[]>([]);
   const [selectedSite, setSelectedSite] = useState<any>(null);
-  const [vehicles, setVehicles] = useState<any[]>([]);
   const [selectedVehicle, setSelectedVehicle] = useState<any>(null);
 
+  const { data: vehicles = [], isLoading: vehiclesLoading } = useQuery({
+    queryKey: ['user', DEMO_USER_ID, 'vehicles'],
+    queryFn: async () => {
+      const response = await fetch(`${API_BASE_URL}/api/users/${DEMO_USER_ID}/vehicles`);
+      if (!response.ok) throw new Error('Failed to fetch vehicles');
+      const result = await response.json();
+      if (!result.success) throw new Error(result.error);
+      return result.data || [];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const { data: sites = [], isLoading: sitesLoading } = useQuery({
+    queryKey: ['sites'],
+    queryFn: async () => {
+      const response = await fetch(`${API_BASE_URL}/api/sites`);
+      if (!response.ok) throw new Error('Failed to fetch sites');
+      const result = await response.json();
+      if (!result.success) throw new Error(result.error);
+      return result.data || [];
+    },
+    staleTime: 10 * 60 * 1000, // Sites don't change often
+  });
+
+  const createParkingMutation = useMutation({
+    mutationFn: async (data: { vehicle_id: string; site_id: string; payment_amount: number }) => {
+      const response = await fetch(`${API_BASE_URL}/api/parking-request`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: DEMO_USER_ID,
+          ...data,
+        }),
+      });
+      if (!response.ok) throw new Error('Failed to create parking request');
+      const result = await response.json();
+      if (!result.success) throw new Error(result.error);
+      return result.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user', DEMO_USER_ID, 'session'] });
+      router.push('/user/ticket');
+    },
+  });
+
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        const vehiclesResponse = await fetch(`${API_BASE_URL}/api/users/${DEMO_USER_ID}/vehicles`);
-        const vehiclesResult = await vehiclesResponse.json();
-        if (vehiclesResult.success) {
-          setVehicles(vehiclesResult.data);
-          if (vehiclesResult.data.length > 0) {
-            setSelectedVehicle(vehiclesResult.data[0]);
-          }
-        }
+    if (vehicles.length > 0 && !selectedVehicle) {
+      setSelectedVehicle(vehicles[0]);
+    }
+    if (sites.length > 0 && !selectedSite) {
+      setSelectedSite(sites[0]);
+    }
+  }, [vehicles, sites, selectedVehicle, selectedSite]);
 
-        const sitesResponse = await fetch(`${API_BASE_URL}/api/sites`);
-        const sitesResult = await sitesResponse.json();
-        if (sitesResult.success) {
-          setSites(sitesResult.data);
-          if (sitesResult.data.length > 0) {
-            setSelectedSite(sitesResult.data[0]);
-          }
-        }
-      } catch (error) {
-        console.error('Error loading data:', error);
-      }
-    };
-    loadData();
-  }, []);
-
-  const handleConfirmParking = async () => {
+  const handleConfirmParking = () => {
     if (!selectedVehicle || !selectedSite) {
       alert('Please select a vehicle and parking site.');
       return;
     }
-
-    setLoading(true);
-    try {
-      const parkingResponse = await fetch(`${API_BASE_URL}/api/parking-request`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          user_id: DEMO_USER_ID,
-          vehicle_id: selectedVehicle.id,
-          site_id: selectedSite.id,
-          payment_amount: selectedSite.fixed_parking_fee
-        })
-      });
-
-      const parkingResult = await parkingResponse.json();
-
-      if (parkingResult.success) {
-        router.push('/user/ticket');
-      } else {
-        alert('Failed to create parking session: ' + parkingResult.error);
-      }
-    } catch (error) {
-      console.error('Error creating parking session:', error);
-      alert('Failed to create parking session. Please try again.');
-    } finally {
-      setLoading(false);
-    }
+    createParkingMutation.mutate({
+      vehicle_id: selectedVehicle.id,
+      site_id: selectedSite.id,
+      payment_amount: selectedSite.fixed_parking_fee,
+    });
   };
 
   return (
@@ -234,10 +237,10 @@ export default function ConfirmParkingPage() {
             </Link>
             <button
               onClick={handleConfirmParking}
-              disabled={loading}
+              disabled={createParkingMutation.isPending}
               className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white rounded-2xl font-semibold"
             >
-              {loading ? 'Creating...' : 'Confirm Parking'}
+              {createParkingMutation.isPending ? 'Creating...' : 'Confirm Parking'}
             </button>
           </div>
         </div>
