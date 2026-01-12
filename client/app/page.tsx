@@ -5,19 +5,14 @@ import {Car} from 'lucide-react'
 
 export default function Home() {
   return (
-    <div className="flex flex-col h-full bg-[#f8f9fa]">
-      <div className="bg-[#6366f1] text-white px-5 pt-12 pb-6">
-        <h1 className="text-xl font-semibold">Smart Parking</h1>
-        <p className="text-white/80 text-sm mt-0.5">Choose your role</p>
-      </div>
-
+    <div className="flex flex-col h-screen bg-[#f8f9fa]">
       <div className="flex-1 overflow-y-auto px-5 py-6">
         <div className="max-w-md mx-auto">
           <div className="text-center mb-8">
             <div className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-lg">
               <Car size={72}/>
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Welcome</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Smart Parking</h2>
             <p className="text-gray-600">Select your role to continue</p>
           </div>
 
