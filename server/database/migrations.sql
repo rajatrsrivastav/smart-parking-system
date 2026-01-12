@@ -55,12 +55,13 @@ VALUES
   ('Amit Kumar', 'amit@example.com', '9876543212', 'user')
 ON CONFLICT (email) DO NOTHING;
 
-INSERT INTO users (name, email, phone, role, is_available)
+INSERT INTO users (id, name, email, phone, role, is_available)
 VALUES 
-  ('Rajesh Kumar', 'rajesh@driver.com', '9876543220', 'driver', true),
-  ('Suresh Patel', 'suresh@driver.com', '9876543221', 'driver', true),
-  ('Mahesh Singh', 'mahesh@driver.com', '9876543222', 'driver', true)
-ON CONFLICT (email) DO NOTHING;
+  ('7cafde48-a1fb-4f9b-a86f-676a4b15764d', 'Demo Driver', 'demo@driver.com', '9876543223', 'driver', true),
+  ('rajesh-id', 'Rajesh Kumar', 'rajesh@driver.com', '9876543220', 'driver', true),
+  ('suresh-id', 'Suresh Patel', 'suresh@driver.com', '9876543221', 'driver', true),
+  ('mahesh-id', 'Mahesh Singh', 'mahesh@driver.com', '9876543222', 'driver', true)
+ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO parking_sites (name, address, city, total_slots, available_slots, fixed_parking_fee)
 VALUES 
@@ -71,7 +72,7 @@ ON CONFLICT DO NOTHING;
 
 ALTER TABLE parking_sessions DROP CONSTRAINT IF EXISTS parking_sessions_status_check;
 ALTER TABLE parking_sessions ADD CONSTRAINT parking_sessions_status_check 
-  CHECK (status IN ('active', 'completed', 'cancelled', 'retrieval_requested'));
+  CHECK (status IN ('active', 'completed', 'cancelled', 'retrieval_requested', 'in_transit', 'ready_for_retrieval'));
 
 ALTER TABLE valet_assignments DROP CONSTRAINT IF EXISTS valet_assignments_status_check;
 ALTER TABLE valet_assignments ADD CONSTRAINT valet_assignments_status_check 

@@ -52,6 +52,10 @@ export const acceptRequest = async (req, res) => {
   try {
     const { driver_id } = req.body;
 
+    if (!driver_id) {
+      return res.status(400).json({ success: false, error: 'Driver ID is required' });
+    }
+
     const { data, error } = await supabase
       .from('valet_assignments')
       .update({
@@ -60,9 +64,18 @@ export const acceptRequest = async (req, res) => {
       })
       .eq('id', req.params.requestId)
       .select(`
-        *,
+        id,
+        session_id,
+        driver_id,
+        assignment_type,
+        status,
+        assigned_at,
         parking_sessions(
-          *,
+          id,
+          status,
+          user_id,
+          vehicle_id,
+          site_id,
           users(name),
           vehicles(vehicle_name, plate_number),
           parking_sites(name, address)
@@ -71,9 +84,32 @@ export const acceptRequest = async (req, res) => {
       .single();
 
     if (error) throw error;
+
+    if (!data) {
+      return res.status(404).json({ success: false, error: 'Assignment not found' });
+    }
+
+    // Update parking session status based on assignment type
+    if (data.assignment_type === 'retrieve') {
+      const { error: sessionError } = await supabase
+        .from('parking_sessions')
+        .update({ status: 'in_transit' })
+        .eq('id', data.session_id);
+
+      if (sessionError) throw sessionError;
+    } else if (data.assignment_type === 'park') {
+      const { error: sessionError } = await supabase
+        .from('parking_sessions')
+        .update({ status: 'in_transit' })
+        .eq('id', data.session_id);
+
+      if (sessionError) throw sessionError;
+    }
+
     res.json({ success: true, data });
   } catch (error) {
-    res.status(500).json({ success: false, error: friendlyErrorMessage(error) });
+    console.error('Error accepting request:', error);
+    res.status(500).json({ success: false, error: error.message || friendlyErrorMessage(error) });
   }
 };
 
@@ -81,11 +117,20 @@ export const completeParking = async (req, res) => {
   try {
     const { assignment_id, parking_spot } = req.body;
 
-    const { data: assignment } = await supabase
+    if (!assignment_id) {
+      return res.status(400).json({ success: false, error: 'Assignment ID is required' });
+    }
+
+    const { data: assignment, error: assignmentError } = await supabase
       .from('valet_assignments')
       .select('session_id')
       .eq('id', assignment_id)
       .single();
+
+    if (assignmentError) throw assignmentError;
+    if (!assignment) {
+      return res.status(404).json({ success: false, error: 'Assignment not found' });
+    }
 
     const { error: sessionError } = await supabase
       .from('parking_sessions')
@@ -115,10 +160,16 @@ export const completeParking = async (req, res) => {
       .eq('id', assignment.session_id)
       .single();
 
-    await supabase.rpc('decrement_parking_slots', { site_id: session.site_id });
+    if (session) {
+      const { error: decrementError } = await supabase.rpc('decrement_available_slots', { 
+        site_id_param: session.site_id 
+      });
+      if (decrementError) console.error('Error decrementing slots:', decrementError);
+    }
 
     res.json({ success: true, data });
   } catch (error) {
+    console.error('Error completing parking:', error);
     res.status(500).json({ success: false, error: friendlyErrorMessage(error) });
   }
 };
@@ -127,11 +178,20 @@ export const completeRetrieval = async (req, res) => {
   try {
     const { assignment_id } = req.body;
 
-    const { data: assignment } = await supabase
+    if (!assignment_id) {
+      return res.status(400).json({ success: false, error: 'Assignment ID is required' });
+    }
+
+    const { data: assignment, error: assignmentError } = await supabase
       .from('valet_assignments')
       .select('session_id')
       .eq('id', assignment_id)
       .single();
+
+    if (assignmentError) throw assignmentError;
+    if (!assignment) {
+      return res.status(404).json({ success: false, error: 'Assignment not found' });
+    }
 
     const { error: sessionError } = await supabase
       .from('parking_sessions')
@@ -161,10 +221,16 @@ export const completeRetrieval = async (req, res) => {
       .eq('id', assignment.session_id)
       .single();
 
-    await supabase.rpc('increment_parking_slots', { site_id: session.site_id });
+    if (session) {
+      const { error: incrementError } = await supabase.rpc('increment_available_slots', { 
+        site_id_param: session.site_id 
+      });
+      if (incrementError) console.error('Error incrementing slots:', incrementError);
+    }
 
     res.json({ success: true, data });
   } catch (error) {
+    console.error('Error completing retrieval:', error);
     res.status(500).json({ success: false, error: friendlyErrorMessage(error) });
   }
 };

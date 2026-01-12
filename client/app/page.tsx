@@ -5,34 +5,36 @@ import {Car} from 'lucide-react'
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-600 to-indigo-700 flex items-center justify-center p-6">
-      <div className="max-w-md w-full">
-        <div className="text-center mb-12">
-          <div className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-            <Car size={72}/>
-          </div>
-          <h1 className="text-4xl font-bold text-white mb-2">Smart Parking</h1>
-          <p className="text-indigo-100">Premium Valet Parking Solution</p>
-        </div>
+    <div className="flex flex-col h-full bg-[#f8f9fa]">
+      <div className="bg-[#6366f1] text-white px-5 pt-12 pb-6">
+        <h1 className="text-xl font-semibold">Smart Parking</h1>
+        <p className="text-white/80 text-sm mt-0.5">Choose your role</p>
+      </div>
 
-        <div className="bg-white/95 backdrop-blur rounded-3xl shadow-2xl p-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2 text-center">Login As</h2>
-          <p className="text-gray-500 text-center mb-8">Select your role to continue</p>
+      <div className="flex-1 overflow-y-auto px-5 py-6">
+        <div className="max-w-md mx-auto">
+          <div className="text-center mb-8">
+            <div className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+              <Car size={72}/>
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Welcome</h2>
+            <p className="text-gray-600">Select your role to continue</p>
+          </div>
 
           <div className="space-y-4">
             <Link href="/user/home">
-              <div className="group p-5 bg-gradient-to-r from-indigo-50 to-indigo-100 hover:from-indigo-100 hover:to-indigo-200 rounded-2xl cursor-pointer transition-all hover:shadow-lg border-2 border-transparent hover:border-indigo-300">
+              <div className="group bg-white rounded-xl p-5 cursor-pointer transition-all hover:shadow-lg border border-gray-100">
                 <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 bg-indigo-600 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <div className="w-14 h-14 bg-[#6366f1] rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
                     <svg className="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
                     </svg>
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-bold text-gray-900 text-lg">User</h3>
+                    <h3 className="font-semibold text-gray-900 text-lg">User</h3>
                     <p className="text-sm text-gray-600">Park & retrieve your vehicle</p>
                   </div>
-                  <svg className="w-6 h-6 text-indigo-600 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-6 h-6 text-gray-400 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
                 </div>
@@ -40,7 +42,7 @@ export default function Home() {
             </Link>
 
             <Link href="/manager">
-              <div className="group p-5 bg-gradient-to-r from-gray-50 to-gray-100 hover:from-gray-100 hover:to-gray-200 rounded-2xl cursor-pointer transition-all hover:shadow-lg border-2 border-transparent hover:border-gray-300">
+              <div className="group bg-white rounded-xl p-5 cursor-pointer transition-all hover:shadow-lg border border-gray-100">
                 <div className="flex items-center gap-4">
                   <div className="w-14 h-14 bg-gray-800 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
                     <svg className="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 20 20">
@@ -48,10 +50,10 @@ export default function Home() {
                     </svg>
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-bold text-gray-900 text-lg">Manager</h3>
+                    <h3 className="font-semibold text-gray-900 text-lg">Manager</h3>
                     <p className="text-sm text-gray-600">Manage parking operations</p>
                   </div>
-                  <svg className="w-6 h-6 text-gray-800 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-6 h-6 text-gray-400 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
                 </div>
@@ -59,7 +61,7 @@ export default function Home() {
             </Link>
 
             <Link href="/driver">
-              <div className="group p-5 bg-gradient-to-r from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 rounded-2xl cursor-pointer transition-all hover:shadow-lg border-2 border-transparent hover:border-blue-300">
+              <div className="group bg-white rounded-xl p-5 cursor-pointer transition-all hover:shadow-lg border border-gray-100">
                 <div className="flex items-center gap-4">
                   <div className="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
                     <svg className="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 20 20">
@@ -68,10 +70,10 @@ export default function Home() {
                     </svg>
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-bold text-gray-900 text-lg">Driver</h3>
+                    <h3 className="font-semibold text-gray-900 text-lg">Driver</h3>
                     <p className="text-sm text-gray-600">Valet service console</p>
                   </div>
-                  <svg className="w-6 h-6 text-blue-600 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-6 h-6 text-gray-400 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
                 </div>
@@ -79,7 +81,7 @@ export default function Home() {
             </Link>
 
             <Link href="/super-admin">
-              <div className="group p-5 bg-gradient-to-r from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 rounded-2xl cursor-pointer transition-all hover:shadow-lg border-2 border-transparent hover:border-purple-300">
+              <div className="group bg-white rounded-xl p-5 cursor-pointer transition-all hover:shadow-lg border border-gray-100">
                 <div className="flex items-center gap-4">
                   <div className="w-14 h-14 bg-purple-600 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
                     <svg className="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 20 20">
@@ -87,20 +89,16 @@ export default function Home() {
                     </svg>
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-bold text-gray-900 text-lg">Super Admin</h3>
+                    <h3 className="font-semibold text-gray-900 text-lg">Super Admin</h3>
                     <p className="text-sm text-gray-600">System administration</p>
                   </div>
-                  <svg className="w-6 h-6 text-purple-600 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-6 h-6 text-gray-400 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
                 </div>
               </div>
             </Link>
           </div>
-        </div>
-
-        <div className="text-center mt-8 text-white/80 text-sm">
-          <p>Trusted by 1M+ users nationwide</p>
         </div>
       </div>
     </div>

@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS parking_sessions (
   payment_amount DECIMAL(10, 2),
   payment_method VARCHAR(50),
   payment_status VARCHAR(50) DEFAULT 'pending' CHECK (payment_status IN ('pending', 'completed', 'failed')),
-  status VARCHAR(50) DEFAULT 'active' CHECK (status IN ('active', 'completed', 'cancelled', 'retrieval_requested')),
+  status VARCHAR(50) DEFAULT 'active' CHECK (status IN ('active', 'completed', 'cancelled', 'retrieval_requested', 'in_transit', 'ready_for_retrieval')),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

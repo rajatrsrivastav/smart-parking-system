@@ -30,26 +30,33 @@ app.get('/', (req, res) => {
   res.json({message: 'Smart Parking System API - Production Ready'});
 });
 
-app.get('/health', async (req, res) => {
-  try {
-    const { data, error } = await supabase.from('parking_sites').select('count');
-    
-    if (error) throw error;
-    
-    res.json({ 
-      status: 'healthy', 
-      database: 'connected',
-      timestamp: new Date().toISOString()
-    });
-  } catch (error) {
-    res.status(500).json({ 
-      status: 'unhealthy', 
-      database: 'disconnected',
-      error: friendlyErrorMessage(error)
-    });
-  }
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString()
+  });
 });
 
+// app.get('/health', async (req, res) => {
+//   try {
+//     const { data, error } = await supabase.from('parking_sites').select('count');
+    
+//     if (error) throw error;
+    
+//     res.json({ 
+//       status: 'healthy', 
+//       database: 'connected',
+//       timestamp: new Date().toISOString()
+//     });
+//   } catch (error) {
+//     res.status(500).json({ 
+//       status: 'unhealthy', 
+//       database: 'disconnected',
+//       error: friendlyErrorMessage(error)
+//     });
+//   }
+// });
 
 app.get('/api/sites', async (req, res) => {
   try {

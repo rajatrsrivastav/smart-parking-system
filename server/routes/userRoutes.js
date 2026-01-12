@@ -8,7 +8,9 @@ import {
   getMySession,
   requestRetrieval,
   mockPayment,
-  getMyHistory
+  getMyHistory,
+  getParkingSession,
+  completeParkingSession
 } from '../controllers/userController.js';
 
 const router = express.Router();
@@ -19,6 +21,8 @@ router.get('/users/:userId/vehicles', getUserVehicles);
 router.post('/users/:userId/vehicles', createVehicle);
 router.post('/parking-request', createParkingRequest);
 router.get('/my-session/:userId', getMySession);
+router.get('/parking-session/:userId', getParkingSession);
+router.post('/complete-parking-session', completeParkingSession);
 router.post('/request-retrieval', requestRetrieval);
 router.post('/mock-payment', mockPayment);
 router.get('/my-history/:userId', getMyHistory);

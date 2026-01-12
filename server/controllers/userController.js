@@ -330,3 +330,48 @@ export const deleteVehicle = async (req, res) => {
     res.status(500).json({ success: false, error: friendlyErrorMessage(error) });
   }
 };
+
+export const getParkingSession = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    const { data, error } = await supabase
+      .from('parking_sessions')
+      .select(`
+        *,
+        vehicles(vehicle_name, plate_number),
+        parking_sites(name, address)
+      `)
+      .eq('user_id', userId)
+      .in('status', ['retrieval_requested', 'in_transit', 'ready_for_retrieval'])
+      .order('entry_time', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (error && error.code !== 'PGRST116') throw error;
+    res.json({ success: true, data: data || null });
+  } catch (error) {
+    res.status(500).json({ success: false, error: friendlyErrorMessage(error) });
+  }
+};
+
+export const completeParkingSession = async (req, res) => {
+  try {
+    const { sessionId } = req.body;
+
+    const { data, error } = await supabase
+      .from('parking_sessions')
+      .update({
+        status: 'completed',
+        exit_time: new Date().toISOString()
+      })
+      .eq('id', sessionId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    res.json({ success: true, data });
+  } catch (error) {
+    res.status(500).json({ success: false, error: friendlyErrorMessage(error) });
+  }
+};
