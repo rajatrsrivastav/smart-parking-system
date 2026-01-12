@@ -74,7 +74,7 @@ A modern, mobile-first Smart Parking System web application built with Next.js, 
 
 ### Demo Video
 <video width="640" height="360" controls>
-  <source src="demo/demo-video.mov" type="video/mp4">
+  <source src="demo/demo-video.mp4" type="video/mp4">
   Your browser does not support the video tag.
 </video>
 
