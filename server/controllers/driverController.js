@@ -196,8 +196,7 @@ export const completeRetrieval = async (req, res) => {
     const { error: sessionError } = await supabase
       .from('parking_sessions')
       .update({
-        status: 'completed',
-        exit_time: new Date().toISOString()
+        status: 'ready_for_retrieval'
       })
       .eq('id', assignment.session_id);
 

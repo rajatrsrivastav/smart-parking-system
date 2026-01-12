@@ -89,10 +89,10 @@ export default function TicketPage() {
   });
 
   useEffect(() => {
-    if (session && session.payment_status === 'pending') {
-      mockPaymentMutation.mutate(session.id);
+    if (session && session.status === 'retrieval_requested') {
+      router.push('/user/retrieval');
     }
-  }, [session]);
+  }, [session, router]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -276,7 +276,7 @@ export default function TicketPage() {
           </div>
 
           <div className="space-y-3 mb-4">
-            {session.status === 'retrieval_requested' || session.status === 'in_transit' || session.status === 'ready_for_retrieval' ? (
+            {session.status === 'in_transit' || session.status === 'ready_for_retrieval' ? (
               <div className="bg-[#ecfdf5] border border-[#a7f3d0] rounded-xl p-4">
                 <div className="flex items-start gap-3">
                   <div className="bg-[#22c55e] rounded-full p-3 flex-shrink-0">
@@ -287,14 +287,10 @@ export default function TicketPage() {
                   </div>
                   <div className="flex-1">
                     <h3 className="font-medium text-gray-900">
-                      {session.status === 'ready_for_retrieval' ? 'Car Arriving' :
-                       session.status === 'in_transit' ? 'Car on the Way' :
-                       'Waiting for Driver'}
+                      {session.status === 'ready_for_retrieval' ? 'Car Arriving' : 'Car on the Way'}
                     </h3>
                     <p className="text-sm text-gray-600">
-                      {session.status === 'ready_for_retrieval' ? 'Your vehicle is ready at the pickup point' :
-                       session.status === 'in_transit' ? 'Vehicle is being brought to you' :
-                       'Valet has been notified and will bring your car'}
+                      {session.status === 'ready_for_retrieval' ? 'Your vehicle is ready at the pickup point' : 'Vehicle is being brought to you'}
                     </p>
                     {session.status === 'ready_for_retrieval' && (
                       <div className="mt-4 pt-4 border-t border-[#a7f3d0]">

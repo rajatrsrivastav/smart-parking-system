@@ -57,23 +57,37 @@ export default function RetrievalPage() {
     {
       id: 1,
       title: 'Request Received',
-      description: 'Valet has been notified',
+      description: 'Your retrieval request has been submitted',
       icon: CheckCircle2,
       status: session ? 'completed' : 'pending',
     },
     {
       id: 2,
-      title: 'Car on the Way',
-      description: 'Vehicle is being brought',
-      icon: Truck,
-      status: session?.status === 'in_transit' ? 'active' : session ? 'completed' : 'pending',
+      title: 'Valet has been notified',
+      description: 'Driver assignment in progress',
+      icon: CheckCircle2,
+      status: session ? 'completed' : 'pending',
     },
     {
       id: 3,
-      title: 'Car Arriving',
-      description: 'Ready for pickup',
+      title: 'Car on the Way',
+      description: 'Driver has accepted the assignment',
+      icon: Truck,
+      status: session && ['in_transit', 'ready_for_retrieval'].includes(session.status) ? 'completed' : 'pending',
+    },
+    {
+      id: 4,
+      title: 'Vehicle is being brought',
+      description: 'Your car is on its way to pickup',
+      icon: Truck,
+      status: session?.status === 'ready_for_retrieval' ? 'completed' : session?.status === 'in_transit' ? 'active' : 'pending',
+    },
+    {
+      id: 5,
+      title: 'Ready for pickup',
+      description: 'Your vehicle is at the pickup point',
       icon: MapPin,
-      status: session?.status === 'ready_for_retrieval' ? 'active' : session?.status === 'in_transit' ? 'completed' : 'pending',
+      status: session?.status === 'ready_for_retrieval' ? 'active' : 'pending',
     },
   ];
 
@@ -83,7 +97,10 @@ export default function RetrievalPage() {
       return 'Your vehicle is at the pickup point';
     }
     if (session.status === 'in_transit') {
-      return 'Vehicle is being brought';
+      return 'Vehicle is being brought to you';
+    }
+    if (session.status === 'retrieval_requested') {
+      return 'Waiting for driver to accept assignment';
     }
     return 'Valet has been notified';
   };
@@ -91,9 +108,12 @@ export default function RetrievalPage() {
   const getStatusTitle = () => {
     if (!session) return '';
     if (session.status === 'ready_for_retrieval') {
-      return 'Car Arriving';
+      return 'Ready for pickup';
     }
     if (session.status === 'in_transit') {
+      return 'Vehicle is being brought';
+    }
+    if (session.status === 'retrieval_requested') {
       return 'Car on the Way';
     }
     return 'Request Received';
@@ -167,7 +187,9 @@ export default function RetrievalPage() {
                             isCompleted
                               ? 'bg-[#dcfce7] border-2 border-[#16a34a]'
                               : isActive
-                              ? 'bg-[#22c55e] border-2 border-[#16a34a]'
+                              ? step.id === 5 && session?.status === 'ready_for_retrieval'
+                                ? 'bg-[#22c55e] border-2 border-[#16a34a] animate-pulse'
+                                : 'bg-[#22c55e] border-2 border-[#16a34a]'
                               : 'bg-gray-100 border-2 border-gray-300'
                           }`}
                         >
@@ -260,6 +282,13 @@ export default function RetrievalPage() {
                   <span className="text-2xl">🎉</span>
                   <p className="font-medium text-[#065f46]">Your vehicle is ready at the pickup point!</p>
                 </div>
+                <button
+                  onClick={handleCompleteParking}
+                  disabled={completeParkingMutation.isPending}
+                  className="w-full py-3 bg-[#22c55e] hover:bg-[#16a34a] disabled:bg-gray-400 text-white rounded-xl font-medium transition-colors"
+                >
+                  {completeParkingMutation.isPending ? 'Completing...' : 'Exit & End Parking'}
+                </button>
               </div>
             )}
           </>
@@ -279,18 +308,6 @@ export default function RetrievalPage() {
           </div>
         )}
       </div>
-
-      {session && session.status === 'ready_for_retrieval' && (
-        <div className="fixed bottom-16 left-0 right-0 px-4 pb-4 bg-[#f8f9fa]">
-          <button
-            onClick={handleCompleteParking}
-            disabled={completeParkingMutation.isPending}
-            className="w-full py-3 bg-[#22c55e] hover:bg-[#16a34a] disabled:bg-gray-400 text-white rounded-xl font-medium transition-colors"
-          >
-            {completeParkingMutation.isPending ? 'Completing...' : 'Exit & End Parking'}
-          </button>
-        </div>
-      )}
 
       <BottomNav role="user" />
     </div>
