@@ -73,9 +73,6 @@ A modern, mobile-first Smart Parking System web application built with Next.js, 
 ## Screenshots/Demo
 
 ### Demo Video
-<video width="640" height="360" controls>
-  <source src="https://github.com/rajatrsrivastav/smart-parking-system/raw/main/demo/demo-video.mp4" type="video/mp4">
-  Your browser does not support the video tag.
-</video>
+[Watch the demo video](https://drive.google.com/file/d/1wWzyICG65xdHLqkwdd0njhn73FXvZh7W/view?usp=sharing)
 
 
