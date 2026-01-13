@@ -64,7 +64,6 @@ export default function ConfirmParkingPage() {
           ...data,
         }),
       });
-      if (!response.ok) throw new Error('Failed to create parking request');
       const result = await response.json();
       if (!result.success) throw new Error(result.error);
       return result.data;
