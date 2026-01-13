@@ -16,7 +16,6 @@ export default function ConfirmParkingPage() {
   const [selectedPayment, setSelectedPayment] = useState('upi');
   const [selectedSite, setSelectedSite] = useState<any>(null);
   const [selectedVehicle, setSelectedVehicle] = useState<any>(null);
-  const [errorMessage, setErrorMessage] = useState<string>('');
 
   const { data: vehicles = [], isLoading: vehiclesLoading } = useQuery({
     queryKey: ['user', DEMO_USER_ID, 'vehicles'],
@@ -69,12 +68,11 @@ export default function ConfirmParkingPage() {
       return result.data;
     },
     onSuccess: () => {
-      setErrorMessage('');
       queryClient.invalidateQueries({ queryKey: ['user', DEMO_USER_ID, 'session'] });
       router.push('/user/ticket');
     },
     onError: (error: Error) => {
-      setErrorMessage(error.message);
+      alert(error.message);
     },
   });
 
@@ -92,7 +90,6 @@ export default function ConfirmParkingPage() {
       alert('Please select a vehicle and parking site.');
       return;
     }
-    setErrorMessage('');
     createParkingMutation.mutate({
       vehicle_id: selectedVehicle.id,
       site_id: selectedSite.id,
@@ -230,18 +227,6 @@ export default function ConfirmParkingPage() {
               </button>
             </div>
           </div>
-
-          {errorMessage && (
-            <div className="bg-[#fef2f2] border border-[#fecaca] rounded-xl p-4 mb-4 flex items-start gap-3">
-              <svg className="w-5 h-5 text-[#dc2626] flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-              </svg>
-              <div>
-                <p className="text-sm font-medium text-[#dc2626]">Unable to create parking request</p>
-                <p className="text-sm text-[#dc2626] mt-1">{errorMessage}</p>
-              </div>
-            </div>
-          )}
 
           <div className="flex gap-3 mb-6">
             <Link
