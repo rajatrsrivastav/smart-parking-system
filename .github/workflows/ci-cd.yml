@@ -16,7 +16,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'  # Changed from '18' to '20' for Next.js compatibility
           cache: 'npm'
           cache-dependency-path: ./client/package-lock.json
 
