@@ -57,11 +57,10 @@ ON CONFLICT (email) DO NOTHING;
 
 INSERT INTO users (id, name, email, phone, role, is_available)
 VALUES 
-  ('7cafde48-a1fb-4f9b-a86f-676a4b15764d', 'Demo Driver', 'demo@driver.com', '9876543223', 'driver', true),
-  ('rajesh-id', 'Rajesh Kumar', 'rajesh@driver.com', '9876543220', 'driver', true),
-  ('suresh-id', 'Suresh Patel', 'suresh@driver.com', '9876543221', 'driver', true),
-  ('mahesh-id', 'Mahesh Singh', 'mahesh@driver.com', '9876543222', 'driver', true)
-ON CONFLICT (id) DO NOTHING;
+  ('9744c7fe-7f24-4583-b324-c1e536fc0f20', 'Rajesh Kumar', 'rajesh@driver.com', '9876543220', 'driver', true),
+  ('a1b2c3d4-e5f6-7890-abcd-ef1234567890', 'Suresh Patel', 'suresh@driver.com', '9876543221', 'driver', true),
+  ('550e8400-e29b-41d4-a716-446655440000', 'Mahesh Singh', 'mahesh@driver.com', '9876543222', 'driver', true)
+ON CONFLICT (email) DO NOTHING;
 
 INSERT INTO parking_sites (name, address, city, total_slots, available_slots, fixed_parking_fee)
 VALUES 
@@ -84,5 +83,13 @@ COMMENT ON TABLE parking_payments IS 'Real payment transactions - NO MOCK DATA';
 COMMENT ON TABLE valet_assignments IS 'Real driver assignments from user requests';
 COMMENT ON COLUMN vehicles.qr_code IS 'Unique QR code for each vehicle (UUID-based)';
 COMMENT ON COLUMN users.is_available IS 'Driver availability status';
+
+-- Disable Row Level Security on all tables (since you're handling auth in your app)
+ALTER TABLE users DISABLE ROW LEVEL SECURITY;
+ALTER TABLE vehicles DISABLE ROW LEVEL SECURITY;
+ALTER TABLE parking_sites DISABLE ROW LEVEL SECURITY;
+ALTER TABLE parking_sessions DISABLE ROW LEVEL SECURITY;
+ALTER TABLE parking_payments DISABLE ROW LEVEL SECURITY;
+ALTER TABLE valet_assignments DISABLE ROW LEVEL SECURITY;
 
 SELECT 'Database setup completed!' as status;
