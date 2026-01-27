@@ -1,5 +1,6 @@
 'use client';
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { API_BASE_URL } from '@/lib/api';
@@ -93,8 +94,8 @@ export default function SuperAdminPage() {
             >
               <option value="">Select a parking site...</option>
               {sites.map((site: Record<string, unknown>) => (
-                <option key={site.id} value={site.id}>
-                  {site.name} - {site.address || 'No address'}
+                <option key={site.id as string} value={site.id as string}>
+                  {(site as any).name} - {(site as any).address || 'No address'}
                 </option>
               ))}
             </select>
@@ -139,13 +140,13 @@ export default function SuperAdminPage() {
             <div className="bg-[#f5f3ff] rounded-xl p-4">
               <div className="text-sm text-gray-500 mb-1">Tickets Issued</div>
               <div className="text-2xl font-bold text-[#7c3aed]">
-                {dashboardData?.todayPerformance?.ticketsIssued || 0}
+                {(dashboardData as any)?.todayPerformance?.ticketsIssued || 0}
               </div>
             </div>
             <div className="bg-[#f5f3ff] rounded-xl p-4">
               <div className="text-sm text-gray-500 mb-1">Collection</div>
               <div className="text-2xl font-bold text-[#7c3aed]">
-                ₹{dashboardData?.todayPerformance?.collection?.toLocaleString() || 0}
+                ₹{(dashboardData as any)?.todayPerformance?.collection?.toLocaleString() || 0}
               </div>
             </div>
           </div>
@@ -170,7 +171,7 @@ export default function SuperAdminPage() {
               <div>
                 <div className="text-sm text-gray-500">Total Tickets</div>
                 <div className="text-lg font-bold text-gray-900">
-                  {dashboardData?.statistics?.totalTickets || 0}
+                  {(dashboardData as any)?.statistics?.totalTickets || 0}
                 </div>
               </div>
             </div>
@@ -184,7 +185,7 @@ export default function SuperAdminPage() {
               <div>
                 <div className="text-sm text-gray-500">Total Collection</div>
                 <div className="text-lg font-bold text-gray-900">
-                  ₹{dashboardData?.statistics?.totalCollection?.toLocaleString() || 0}
+                  ₹{(dashboardData as any)?.statistics?.totalCollection?.toLocaleString() || 0}
                 </div>
               </div>
             </div>
@@ -198,32 +199,32 @@ export default function SuperAdminPage() {
               <div>
                 <div className="text-sm text-gray-500">Active Parking</div>
                 <div className="text-lg font-bold text-gray-900">
-                  {dashboardData?.statistics?.activeParking || 0}
+                  {(dashboardData as any)?.statistics?.activeParking || 0}
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        {selectedSiteId && sites.find((s: Record<string, unknown>) => s.id === selectedSiteId) && (
+        {selectedSiteId && sites.find((s: Record<string, unknown>) => (s.id as string) === selectedSiteId) && (
           <div className="bg-[#f5f3ff] border border-[#c4b5fd] rounded-xl p-4 mb-4">
             <h3 className="font-semibold text-gray-900 mb-1">
-              {sites.find((s: Record<string, unknown>) => s.id === selectedSiteId)?.name}
+              {(sites.find((s: Record<string, unknown>) => (s.id as string) === selectedSiteId) as any)?.name}
             </h3>
             <p className="text-sm text-gray-600 mb-3">
-              {sites.find((s: Record<string, unknown>) => s.id === selectedSiteId)?.address}
+              {(sites.find((s: Record<string, unknown>) => (s.id as string) === selectedSiteId) as any)?.address}
             </p>
             <div className="flex gap-6">
               <div>
                 <p className="text-xs text-gray-500">Available Slots</p>
                 <p className="text-lg font-bold text-[#7c3aed]">
-                  {sites.find((s: Record<string, unknown>) => s.id === selectedSiteId)?.available_slots || 0}
+                  {(sites.find((s: Record<string, unknown>) => (s.id as string) === selectedSiteId) as any)?.available_slots || 0}
                 </p>
               </div>
               <div>
                 <p className="text-xs text-gray-500">Total Slots</p>
                 <p className="text-lg font-bold text-gray-900">
-                  {sites.find((s: Record<string, unknown>) => s.id === selectedSiteId)?.total_slots || 0}
+                  {(sites.find((s: Record<string, unknown>) => (s.id as string) === selectedSiteId) as any)?.total_slots || 0}
                 </p>
               </div>
             </div>

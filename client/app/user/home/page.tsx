@@ -1,5 +1,6 @@
 'use client';
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import Link from 'next/link';
 import BottomNav from '@/components/BottomNav';
 import { API_BASE_URL } from '@/lib/api';
@@ -88,19 +89,19 @@ export default function UserHomePage() {
             ) : (
               <div className="space-y-3">
                 {parkingHistory.slice(0, 3).map((parking: Record<string, unknown>) => (
-                  <div key={parking.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+                  <div key={parking.id as string} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <h3 className="font-semibold text-gray-900 text-[15px]">{parking.parking_sites?.name}</h3>
+                        <h3 className="font-semibold text-gray-900 text-[15px]">{(parking.parking_sites as any)?.name}</h3>
                         <div className="flex items-center gap-1 mt-1">
                           <svg className="w-3.5 h-3.5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
                           </svg>
-                          <span className="text-xs text-gray-500">{parking.parking_sites?.address}</span>
+                          <span className="text-xs text-gray-500">{(parking.parking_sites as any)?.address}</span>
                         </div>
                       </div>
                       <div className="text-right">
-                        <span className="text-base font-bold text-gray-900">₹{parking.payment_amount || 0}</span>
+                        <span className="text-base font-bold text-gray-900">₹{(parking as any).payment_amount || 0}</span>
                         <div className="mt-1">
                           <span className="px-2 py-0.5 bg-green-50 text-green-600 text-xs rounded font-medium">
                             completed
@@ -114,16 +115,16 @@ export default function UserHomePage() {
                         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
-                        <span>{formatDate(parking.exit_time || parking.entry_time)}</span>
+                        <span>{formatDate((parking as any).exit_time || (parking as any).entry_time)}</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
                           <path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"/>
                           <path d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H10a1 1 0 001-1V5a1 1 0 00-1-1H3zM14 7a1 1 0 00-1 1v6.05A2.5 2.5 0 0115.95 16H17a1 1 0 001-1v-5a1 1 0 00-.293-.707l-2-2A1 1 0 0015 7h-1z"/>
                         </svg>
-                        <span>{parking.vehicles?.plate_number}</span>
+                        <span>{(parking.vehicles as any)?.plate_number}</span>
                       </div>
-                      <span className="ml-auto">{formatDuration(parking.entry_time, parking.exit_time)}</span>
+                      <span className="ml-auto">{formatDuration((parking as any).entry_time, (parking as any).exit_time)}</span>
                     </div>
                   </div>
                 ))}

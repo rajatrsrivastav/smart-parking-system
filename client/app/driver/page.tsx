@@ -1,5 +1,6 @@
 'use client';
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import BottomNav from '@/components/BottomNav';
@@ -107,7 +108,7 @@ export default function DriverPage() {
   const handleComplete = async (assignment: Record<string, unknown>) => {
     console.log('handleComplete called with assignment:', assignment);
     try {
-      setProcessingId(assignment.id);
+      setProcessingId(assignment.id as string);
       const endpoint = assignment.assignment_type === 'retrieve'
         ? `/api/driver/complete-retrieval`
         : `/api/driver/complete-parking`;
@@ -117,7 +118,7 @@ export default function DriverPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          assignment_id: assignment.id,
+          assignment_id: assignment.id as string,
           ...(assignment.assignment_type === 'park' && { parking_spot: 'A-01' })
         })
       });
@@ -208,7 +209,7 @@ export default function DriverPage() {
         ) : (
           <div className="space-y-4">
             {retrieveRequests.map((request) => (
-              <div key={request.id} className="bg-white rounded-xl p-4">
+              <div key={request.id as string} className="bg-white rounded-xl p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <div className="w-8 h-8 bg-[#fff7ed] rounded-full flex items-center justify-center">
                     <svg className="w-4 h-4 text-[#f97316]" fill="currentColor" viewBox="0 0 20 20">
@@ -231,8 +232,8 @@ export default function DriverPage() {
                       </svg>
                     </div>
                     <div>
-                      <h3 className="font-semibold text-gray-900">{request.parking_sessions.vehicles.vehicle_name}</h3>
-                      <p className="text-sm text-gray-500">{request.parking_sessions.vehicles.plate_number}</p>
+                      <h3 className="font-semibold text-gray-900">{(request.parking_sessions as any).vehicles.vehicle_name}</h3>
+                      <p className="text-sm text-gray-500">{(request.parking_sessions as any).vehicles.plate_number}</p>
                     </div>
                   </div>
 
@@ -242,22 +243,22 @@ export default function DriverPage() {
                         <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
                       </svg>
                       <span className="text-gray-500">Customer:</span>
-                      <span className="text-gray-900">{request.parking_sessions.users.name}</span>
+                      <span className="text-gray-900">{(request.parking_sessions as any).users.name}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
                       </svg>
                       <span className="text-gray-500">Location:</span>
-                      <span className="text-gray-900">{request.parking_sessions.parking_sites.name}</span>
+                      <span className="text-gray-900">{(request.parking_sessions as any).parking_sites.name}</span>
                     </div>
-                    {request.parking_sessions.parking_spot && (
+                    {(request.parking_sessions as any).parking_spot && (
                       <div className="flex items-center gap-2">
                         <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
                         </svg>
                         <span className="text-gray-500">Spot:</span>
-                        <span className="text-gray-900 font-bold">{request.parking_sessions.parking_spot}</span>
+                        <span className="text-gray-900 font-bold">{(request.parking_sessions as any).parking_spot}</span>
                       </div>
                     )}
                     <div className="flex items-center gap-2">
@@ -265,12 +266,12 @@ export default function DriverPage() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                       <span className="text-gray-500">Requested:</span>
-                      <span className="text-gray-900">{formatTime(request.assigned_at)}</span>
+                      <span className="text-gray-900">{formatTime(request.assigned_at as string)}</span>
                     </div>
                   </div>
 
                   <button 
-                    onClick={() => handleAccept(request.id)}
+                    onClick={() => handleAccept(request.id as string)}
                     disabled={processingId === request.id}
                     className="w-full py-2.5 bg-[#6366f1] hover:bg-[#4f46e5] disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg font-medium text-sm flex items-center justify-center gap-2 transition-all"
                   >
@@ -286,7 +287,7 @@ export default function DriverPage() {
             ))}
 
             {parkRequests.map((request) => (
-              <div key={request.id} className="bg-white rounded-xl p-4">
+              <div key={request.id as string} className="bg-white rounded-xl p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <div className="w-8 h-8 bg-[#f0fdf4] rounded-full flex items-center justify-center">
                     <svg className="w-4 h-4 text-[#22c55e]" fill="currentColor" viewBox="0 0 20 20">
@@ -309,8 +310,8 @@ export default function DriverPage() {
                       </svg>
                     </div>
                     <div>
-                      <h3 className="font-semibold text-gray-900">{request.parking_sessions.vehicles.vehicle_name}</h3>
-                      <p className="text-sm text-gray-500">{request.parking_sessions.vehicles.plate_number}</p>
+                      <h3 className="font-semibold text-gray-900">{(request.parking_sessions as any).vehicles.vehicle_name}</h3>
+                      <p className="text-sm text-gray-500">{(request.parking_sessions as any).vehicles.plate_number}</p>
                     </div>
                   </div>
 
@@ -320,26 +321,26 @@ export default function DriverPage() {
                         <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
                       </svg>
                       <span className="text-gray-500">Customer:</span>
-                      <span className="text-gray-900">{request.parking_sessions.users.name}</span>
+                      <span className="text-gray-900">{(request.parking_sessions as any).users.name}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
                       </svg>
                       <span className="text-gray-500">Location:</span>
-                      <span className="text-gray-900">{request.parking_sessions.parking_sites.name}</span>
+                      <span className="text-gray-900">{(request.parking_sessions as any).parking_sites.name}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                       <span className="text-gray-500">Requested:</span>
-                      <span className="text-gray-900">{formatTime(request.assigned_at)}</span>
+                      <span className="text-gray-900">{formatTime(request.assigned_at as string)}</span>
                     </div>
                   </div>
 
                   <button 
-                    onClick={() => handleAccept(request.id)}
+                    onClick={() => handleAccept(request.id as string)}
                     disabled={processingId === request.id}
                     className="w-full py-2.5 bg-[#6366f1] hover:bg-[#4f46e5] disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg font-medium text-sm transition-all"
                   >
@@ -350,7 +351,7 @@ export default function DriverPage() {
             ))}
 
             {activeAssignments.map((assignment) => (
-              <div key={assignment.id} className="bg-white rounded-xl p-4">
+              <div key={assignment.id as string} className="bg-white rounded-xl p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <div className="w-8 h-8 bg-[#eff6ff] rounded-full flex items-center justify-center">
                     <svg className="w-4 h-4 text-[#3b82f6]" fill="currentColor" viewBox="0 0 20 20">
@@ -374,8 +375,8 @@ export default function DriverPage() {
                       </svg>
                     </div>
                     <div>
-                      <h3 className="font-semibold text-gray-900">{assignment.parking_sessions.vehicles.vehicle_name}</h3>
-                      <p className="text-sm text-gray-500">{assignment.parking_sessions.vehicles.plate_number}</p>
+                      <h3 className="font-semibold text-gray-900">{(assignment.parking_sessions as any).vehicles.vehicle_name}</h3>
+                      <p className="text-sm text-gray-500">{(assignment.parking_sessions as any).vehicles.plate_number}</p>
                     </div>
                   </div>
 
@@ -385,21 +386,21 @@ export default function DriverPage() {
                         <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
                       </svg>
                       <span className="text-gray-500">Customer:</span>
-                      <span className="text-gray-900">{assignment.parking_sessions.users.name}</span>
+                      <span className="text-gray-900">{(assignment.parking_sessions as any).users.name}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
                       </svg>
                       <span className="text-gray-500">Location:</span>
-                      <span className="text-gray-900">{assignment.parking_sessions.parking_sites.name}</span>
+                      <span className="text-gray-900">{(assignment.parking_sessions as any).parking_sites.name}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                       <span className="text-gray-500">Started:</span>
-                      <span className="text-gray-900">{formatTime(assignment.assigned_at)}</span>
+                      <span className="text-gray-900">{formatTime(assignment.assigned_at as string)}</span>
                     </div>
                   </div>
 

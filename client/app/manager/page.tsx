@@ -1,5 +1,6 @@
 'use client';
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { API_BASE_URL } from '@/lib/api';
@@ -89,19 +90,19 @@ export default function ManagerPage() {
       <div className="px-4 -mt-3">
         <div className="grid grid-cols-4 gap-2">
           <div className="bg-white rounded-xl p-3 text-center shadow-sm">
-            <div className="text-xl font-bold text-gray-900">{dashboardData?.activeCars || 0}</div>
+            <div className="text-xl font-bold text-gray-900">{(dashboardData as any)?.activeCars || 0}</div>
             <div className="text-[10px] text-gray-500">Active Cars</div>
           </div>
           <div className="bg-white rounded-xl p-3 text-center shadow-sm">
-            <div className="text-xl font-bold text-[#f97316]">{dashboardData?.retrieving || 0}</div>
+            <div className="text-xl font-bold text-[#f97316]">{(dashboardData as any)?.retrieving || 0}</div>
             <div className="text-[10px] text-gray-500">Retrieving</div>
           </div>
           <div className="bg-white rounded-xl p-3 text-center shadow-sm">
-            <div className="text-xl font-bold text-gray-900">{dashboardData?.totalToday || 0}</div>
+            <div className="text-xl font-bold text-gray-900">{(dashboardData as any)?.totalToday || 0}</div>
             <div className="text-[10px] text-gray-500">Total Today</div>
           </div>
           <div className="bg-white rounded-xl p-3 text-center shadow-sm">
-            <div className="text-xl font-bold text-[#22c55e]">₹{dashboardData?.revenue || 0}</div>
+            <div className="text-xl font-bold text-[#22c55e]">₹{(dashboardData as any)?.revenue || 0}</div>
             <div className="text-[10px] text-gray-500">Revenue</div>
           </div>
         </div>
@@ -110,7 +111,7 @@ export default function ManagerPage() {
       <div className="px-4 py-4 space-y-4 flex-1 overflow-y-auto">
         <h2 className="text-base font-semibold text-gray-900">Active Parking Sessions</h2>
 
-        {!dashboardData?.assignments || dashboardData.assignments.length === 0 ? (
+        {!dashboardData?.assignments || (dashboardData.assignments as any[]).length === 0 ? (
           <div className="bg-white rounded-xl p-8 text-center mb-4">
             <svg className="w-12 h-12 text-gray-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
@@ -120,12 +121,12 @@ export default function ManagerPage() {
           </div>
         ) : (
           <div className="space-y-3 mb-4">
-            {dashboardData.assignments.map((assignment: Record<string, unknown>) => (
-              <div key={assignment.id} className="bg-white rounded-xl p-4">
+            {(dashboardData.assignments as any[]).map((assignment: Record<string, unknown>) => (
+              <div key={assignment.id as string} className="bg-white rounded-xl p-4">
                 <div className="flex items-start justify-between mb-2">
                   <div>
-                    <h3 className="font-semibold text-gray-900">{assignment.vehicles.vehicle_name}</h3>
-                    <p className="text-sm text-gray-500">{assignment.vehicles.plate_number}</p>
+                    <h3 className="font-semibold text-gray-900">{(assignment.vehicles as any).vehicle_name}</h3>
+                    <p className="text-sm text-gray-500">{(assignment.vehicles as any).plate_number}</p>
                   </div>
                   <span className="px-2 py-0.5 bg-[#dcfce7] text-[#16a34a] text-xs rounded-full font-medium">
                     Parked
@@ -135,21 +136,21 @@ export default function ManagerPage() {
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <div>
                     <p className="text-gray-400 text-xs">Customer</p>
-                    <p className="font-medium text-gray-900">{assignment.users.name}</p>
+                    <p className="font-medium text-gray-900">{(assignment.users as any).name}</p>
                   </div>
                   <div>
                     <p className="text-gray-400 text-xs">Location</p>
-                    <p className="font-medium text-gray-900">{assignment.parking_sites.name}</p>
+                    <p className="font-medium text-gray-900">{(assignment.parking_sites as any).name}</p>
                   </div>
-                  {assignment.parking_spot && (
+                  {(assignment.parking_spot as any) && (
                     <div>
                       <p className="text-gray-400 text-xs">Spot</p>
-                      <p className="font-medium text-gray-900">{assignment.parking_spot}</p>
+                      <p className="font-medium text-gray-900">{assignment.parking_spot as any}</p>
                     </div>
                   )}
                   <div>
                     <p className="text-gray-400 text-xs">Duration</p>
-                    <p className="font-medium text-gray-900">{getDuration(assignment.entry_time)}</p>
+                    <p className="font-medium text-gray-900">{getDuration(assignment.entry_time as string)}</p>
                   </div>
                 </div>
               </div>

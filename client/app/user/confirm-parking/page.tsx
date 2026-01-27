@@ -1,5 +1,7 @@
 'use client';
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -18,6 +20,7 @@ export default function ConfirmParkingPage() {
   const [selectedVehicle, setSelectedVehicle] = useState<Record<string, unknown> | null>(null);
 
   const { data: vehicles = [] } = useQuery({
+    queryKey: ['user', DEMO_USER_ID, 'vehicles'],
     queryFn: async () => {
       const response = await fetch(`${API_BASE_URL}/api/users/${DEMO_USER_ID}/vehicles`);
       if (!response.ok) throw new Error('Failed to fetch vehicles');
@@ -77,7 +80,7 @@ export default function ConfirmParkingPage() {
 
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
-    if (vehicles.length > 0 && !selectedVehicle) {
+    if ((vehicles as any[]).length > 0 && !selectedVehicle) {
       setSelectedVehicle(vehicles[0]);
     }
     if (sites.length > 0 && !selectedSite) {
@@ -92,9 +95,9 @@ export default function ConfirmParkingPage() {
       return;
     }
     createParkingMutation.mutate({
-      vehicle_id: selectedVehicle.id,
-      site_id: selectedSite.id,
-      payment_amount: selectedSite.fixed_parking_fee,
+      vehicle_id: selectedVehicle.id as string,
+      site_id: selectedSite.id as string,
+      payment_amount: selectedSite.fixed_parking_fee as number,
     });
   };
 
@@ -137,11 +140,11 @@ export default function ConfirmParkingPage() {
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-500">Vehicle</span>
-                <span className="font-medium text-gray-900">{selectedVehicle?.vehicle_name || 'Loading...'}</span>
+                <span className="font-medium text-gray-900">{(selectedVehicle as any)?.vehicle_name || 'Loading...'}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-500">Number Plate</span>
-                <span className="font-medium text-gray-900">{selectedVehicle?.plate_number || 'Loading...'}</span>
+                <span className="font-medium text-gray-900">{(selectedVehicle as any)?.plate_number || 'Loading...'}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-500">Mobile</span>
@@ -159,8 +162,8 @@ export default function ConfirmParkingPage() {
             </div>
             
             <div>
-              <p className="font-semibold text-gray-900">{selectedSite?.name || 'Loading...'}</p>
-              <p className="text-sm text-gray-500 mt-0.5">{selectedSite?.address || ''}{selectedSite?.city ? `, ${selectedSite.city}` : ''}</p>
+              <p className="font-semibold text-gray-900">{(selectedSite as any)?.name || 'Loading...'}</p>
+              <p className="text-sm text-gray-500 mt-0.5">{(selectedSite as any)?.address || ''}{(selectedSite as any)?.city ? `, ${(selectedSite as any).city}` : ''}</p>
             </div>
           </div>
 
