@@ -8,8 +8,6 @@ import { useQuery } from '@tanstack/react-query';
 const DEMO_USER_ID = 'd7eb7b17-6d46-4df7-8b43-c50206863e28'
 
 export default function UserHomePage() {
-  });
-
   const { data: parkingHistory = [], isLoading: historyLoading } = useQuery({
     queryKey: ['user', DEMO_USER_ID, 'history'],
     queryFn: async () => {
@@ -21,7 +19,7 @@ export default function UserHomePage() {
     staleTime: 2 * 60 * 1000,
   });
 
-  const loading = sessionLoading || historyLoading;
+  const loading = historyLoading;
 
   const formatDuration = (entryTime: string, exitTime?: string) => {
     const entry = new Date(entryTime);

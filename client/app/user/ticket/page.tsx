@@ -25,21 +25,6 @@ export default function TicketPage() {
     refetchInterval: 30000,
   });
 
-  const mockPaymentMutation = useMutation({
-    mutationFn: async (sessionId: string) => {
-      const response = await fetch(`${API_BASE_URL}/api/mock-payment`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ session_id: sessionId, amount: 50 }),
-      });
-      if (!response.ok) throw new Error('Payment failed');
-      const result = await response.json();
-      if (!result.success) throw new Error(result.error);
-      return result.data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['user', DEMO_USER_ID, 'session'] });
-    },
   const retrievalMutation = useMutation({
     mutationFn: async (sessionId: string) => {
       const response = await fetch(`${API_BASE_URL}/api/request-retrieval`, {

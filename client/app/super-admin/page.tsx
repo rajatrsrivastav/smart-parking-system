@@ -11,21 +11,6 @@ export default function SuperAdminPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'overview' | 'approvals'>('overview');
 
-  const fetchSites = async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/sites`);
-      const result = await response.json();
-      if (result.success && result.data) {
-        setSites(result.data);
-        if (result.data.length > 0) {
-          setSelectedSiteId(result.data[0].id);
-        }
-      }
-    } catch (error) {
-      console.error('Failed to fetch sites:', error);
-    }
-  };
-
   const loadDashboard = async (siteId?: string) => {
     setLoading(true);
     try {
@@ -45,14 +30,26 @@ export default function SuperAdminPage() {
   };
 
   useEffect(() => {
+    const fetchSites = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/sites`);
+        const result = await response.json();
+        if (result.success && result.data) {
+          setSites(result.data);
+          if (result.data.length > 0) {
+            setSelectedSiteId(result.data[0].id);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch sites:', error);
+      }
+    };
     fetchSites();
   }, []);
 
   useEffect(() => {
-    if (sites.length > 0 && !selectedSiteId) {
-      setSelectedSiteId(sites[0].id);
-    }
     if (selectedSiteId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       loadDashboard(selectedSiteId);
     }
   }, [selectedSiteId, sites]);

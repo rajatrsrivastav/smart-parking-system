@@ -14,25 +14,11 @@ interface Driver {
   created_at: string;
 }
 
-interface FormData {
-  name: string;
-  email: string;
-  phone: string;
-  is_available: boolean;
-}
-
 export default function ManagerPage() {
   const [dashboardData, setDashboardData] = useState<Record<string, unknown> | null>(null);
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [loading, setLoading] = useState(true);
   const [driversLoading, setDriversLoading] = useState(false);
-
-  useEffect(() => {
-    loadDashboard();
-    loadDrivers();
-    const interval = setInterval(loadDashboard, 30000);
-    return () => clearInterval(interval);
-  }, []);
 
   const loadDashboard = async () => {
     try {
@@ -61,13 +47,13 @@ export default function ManagerPage() {
     setDriversLoading(false);
   };
 
-  };
-
-
-
-
-
-
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadDashboard();
+    loadDrivers();
+    const interval = setInterval(loadDashboard, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   const getDuration = (entryTime: string) => {
     const entry = new Date(entryTime);
@@ -89,7 +75,7 @@ export default function ManagerPage() {
   return (
     <div className="flex flex-col h-full bg-[#f8f9fa] relative">
       <div className="bg-[#1f2937] text-white px-4 pt-12 pb-6">
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center justify-start mb-2">
           <Link href="/" className="w-8 h-8 flex items-center justify-center">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -171,7 +157,7 @@ export default function ManagerPage() {
           </div>
         )}
 
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center justify-start mb-3">
           <h2 className="text-base font-semibold text-gray-900">Driver Management</h2>
         </div>
 
@@ -209,19 +195,8 @@ export default function ManagerPage() {
             ))}
           </div>
         )}
-
-        <h2 className="text-base font-semibold text-gray-900 mb-3">Parking History</h2>
-        
-        <div className="bg-white rounded-xl p-8 text-center">
-          <p className="text-gray-700 font-medium mb-1">No Parking History</p>
-          <p className="text-sm text-gray-500">Completed parking sessions will appear here</p>
-        </div>
       </div>
     </div>
   );
 }
-
-
-
-
 

@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import BottomNav from '@/components/BottomNav';
 import { API_BASE_URL } from '@/lib/api';
@@ -22,7 +21,7 @@ export default function RetrievalPage() {
       if (!result.success) throw new Error(result.error || 'Failed to fetch session');
       return result.data;
     },
-    refetchInterval: pollInterval,
+    refetchInterval: 5000,
     staleTime: 0,
   });
 

@@ -18,7 +18,6 @@ export default function ConfirmParkingPage() {
   const [selectedVehicle, setSelectedVehicle] = useState<Record<string, unknown> | null>(null);
 
   const { data: vehicles = [] } = useQuery({
-    queryKey: ['user', DEMO_USER_ID, 'vehicles'],
     queryFn: async () => {
       const response = await fetch(`${API_BASE_URL}/api/users/${DEMO_USER_ID}/vehicles`);
       if (!response.ok) throw new Error('Failed to fetch vehicles');
@@ -76,6 +75,7 @@ export default function ConfirmParkingPage() {
     },
   });
 
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (vehicles.length > 0 && !selectedVehicle) {
       setSelectedVehicle(vehicles[0]);
@@ -83,7 +83,8 @@ export default function ConfirmParkingPage() {
     if (sites.length > 0 && !selectedSite) {
       setSelectedSite(sites[0]);
     }
-  }, [vehicles, sites]);
+  }, [vehicles, sites, selectedVehicle, selectedSite]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const handleConfirmParking = () => {
     if (!selectedVehicle || !selectedSite) {

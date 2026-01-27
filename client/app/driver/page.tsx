@@ -16,6 +16,18 @@ export default function DriverPage() {
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [driverId, setDriverId] = useState<string>(DEMO_DRIVER_ID);
 
+  const loadDriverId = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/drivers`);
+      const result = await response.json();
+      if (result.success && result.data && result.data.length > 0) {
+        setDriverId(result.data[0].id);
+      }
+    } catch (error) {
+      console.error('Failed to load driver id:', error);
+    }
+  };
+
   useEffect(() => {
     loadDriverId();
   }, []);
