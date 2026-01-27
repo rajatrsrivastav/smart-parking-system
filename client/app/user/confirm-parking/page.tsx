@@ -14,10 +14,10 @@ export default function ConfirmParkingPage() {
   const queryClient = useQueryClient();
 
   const [selectedPayment, setSelectedPayment] = useState('upi');
-  const [selectedSite, setSelectedSite] = useState<any>(null);
-  const [selectedVehicle, setSelectedVehicle] = useState<any>(null);
+  const [selectedSite, setSelectedSite] = useState<Record<string, unknown> | null>(null);
+  const [selectedVehicle, setSelectedVehicle] = useState<Record<string, unknown> | null>(null);
 
-  const { data: vehicles = [], isLoading: vehiclesLoading } = useQuery({
+  const { data: vehicles = [] } = useQuery({
     queryKey: ['user', DEMO_USER_ID, 'vehicles'],
     queryFn: async () => {
       const response = await fetch(`${API_BASE_URL}/api/users/${DEMO_USER_ID}/vehicles`);
@@ -29,7 +29,7 @@ export default function ConfirmParkingPage() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const { data: userData, isLoading: userLoading } = useQuery({
+  const { data: userData } = useQuery({
     queryKey: ['user', DEMO_USER_ID, 'profile'],
     queryFn: async () => {
       const response = await fetch(`${API_BASE_URL}/api/users/${DEMO_USER_ID}/profile`);
@@ -41,7 +41,7 @@ export default function ConfirmParkingPage() {
     staleTime: 10 * 60 * 1000,
   });
 
-  const { data: sites = [], isLoading: sitesLoading } = useQuery({
+  const { data: sites = [] } = useQuery({
     queryKey: ['sites'],
     queryFn: async () => {
       const response = await fetch(`${API_BASE_URL}/api/sites`);
@@ -83,7 +83,7 @@ export default function ConfirmParkingPage() {
     if (sites.length > 0 && !selectedSite) {
       setSelectedSite(sites[0]);
     }
-  }, [vehicles, sites, selectedVehicle, selectedSite]);
+  }, [vehicles, sites]);
 
   const handleConfirmParking = () => {
     if (!selectedVehicle || !selectedSite) {

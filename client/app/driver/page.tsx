@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import BottomNav from '@/components/BottomNav';
 import { API_BASE_URL } from '@/lib/api';
@@ -9,8 +9,8 @@ const DEMO_DRIVER_ID = '7cafde48-a1fb-4f9b-a86f-676a4b15764d';
 
 export default function DriverPage() {
   const router = useRouter();
-  const [requests, setRequests] = useState<any[]>([]);
-  const [activeAssignments, setActiveAssignments] = useState<any[]>([]);
+  const [requests, setRequests] = useState<Record<string, unknown>[]>([]);
+  const [activeAssignments, setActiveAssignments] = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading] = useState(true);
   const [driverName, setDriverName] = useState('Driver');
   const [processingId, setProcessingId] = useState<string | null>(null);
@@ -20,28 +20,7 @@ export default function DriverPage() {
     loadDriverId();
   }, []);
 
-  useEffect(() => {
-    if (driverId) {
-      loadDriverDetails();
-      loadRequests();
-      const interval = setInterval(loadRequests, 10000);
-      return () => clearInterval(interval);
-    }
-  }, [driverId]);
-
-  const loadDriverId = async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/drivers`);
-      const result = await response.json();
-      if (result.success && result.data && result.data.length > 0) {
-        setDriverId(result.data[0].id);
-      }
-    } catch (error) {
-      console.error('Failed to load driver id:', error);
-    }
-  };
-
-  const loadDriverDetails = async () => {
+  const loadDriverDetails = useCallback(async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/driver/${driverId}`);
       const result = await response.json();
@@ -51,9 +30,9 @@ export default function DriverPage() {
     } catch (error) {
       console.error('Failed to load driver details:', error);
     }
-  };
+  }, [driverId]);
 
-  const loadRequests = async () => {
+  const loadRequests = useCallback(async () => {
     try {
       const [requestsResponse, activeResponse] = await Promise.all([
         fetch(`${API_BASE_URL}/api/driver/requests`),
@@ -75,7 +54,16 @@ export default function DriverPage() {
       console.error('Failed to load requests:', error);
     }
     setLoading(false);
-  };
+  }, [driverId]);
+
+  useEffect(() => {
+    if (driverId) {
+      loadDriverDetails();
+      loadRequests();
+      const interval = setInterval(loadRequests, 10000);
+      return () => clearInterval(interval);
+    }
+  }, [driverId, loadDriverDetails, loadRequests]);
 
   const handleAccept = async (requestId: string) => {
     try {
@@ -104,7 +92,7 @@ export default function DriverPage() {
     }
   };
 
-  const handleComplete = async (assignment: any) => {
+  const handleComplete = async (assignment: Record<string, unknown>) => {
     console.log('handleComplete called with assignment:', assignment);
     try {
       setProcessingId(assignment.id);

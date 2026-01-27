@@ -1,6 +1,5 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import BottomNav from '@/components/BottomNav';
 import { API_BASE_URL } from '@/lib/api';
@@ -9,15 +8,6 @@ import { useQuery } from '@tanstack/react-query';
 const DEMO_USER_ID = 'd7eb7b17-6d46-4df7-8b43-c50206863e28'
 
 export default function UserHomePage() {
-  const { data: activeSession, isLoading: sessionLoading } = useQuery({
-    queryKey: ['user', DEMO_USER_ID, 'session'],
-    queryFn: async () => {
-      const response = await fetch(`${API_BASE_URL}/api/my-session/${DEMO_USER_ID}`);
-      if (!response.ok) throw new Error('Failed to fetch session');
-      const result = await response.json();
-      return result.success ? result.data : null;
-    },
-    refetchInterval: 30000,
   });
 
   const { data: parkingHistory = [], isLoading: historyLoading } = useQuery({
@@ -99,7 +89,7 @@ export default function UserHomePage() {
               </div>
             ) : (
               <div className="space-y-3">
-                {parkingHistory.slice(0, 3).map((parking: any) => (
+                {parkingHistory.slice(0, 3).map((parking: Record<string, unknown>) => (
                   <div key={parking.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">

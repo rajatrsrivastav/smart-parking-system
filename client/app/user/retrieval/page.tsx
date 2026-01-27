@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import BottomNav from '@/components/BottomNav';
 import { API_BASE_URL } from '@/lib/api';
@@ -9,20 +9,11 @@ import { CheckCircle2, Truck, MapPin } from 'lucide-react';
 
 const DEMO_USER_ID = 'd7eb7b17-6d46-4df7-8b43-c50206863e28';
 
-interface ParkingSession {
-  id: string;
-  status: string;
-  entry_time: string;
-  vehicles: { vehicle_name: string; plate_number: string };
-  parking_sites: { name: string; address: string };
-}
-
 export default function RetrievalPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const [pollInterval, setPollInterval] = useState(1000);
 
-  const { data: session, isLoading, refetch } = useQuery({
+  const { data: session, isLoading } = useQuery({
     queryKey: ['user', DEMO_USER_ID, 'current-session'],
     queryFn: async () => {
       const response = await fetch(`${API_BASE_URL}/api/parking-session/${DEMO_USER_ID}`);
@@ -177,7 +168,6 @@ export default function RetrievalPage() {
                   const Icon = step.icon;
                   const isCompleted = step.status === 'completed';
                   const isActive = step.status === 'active';
-                  const isPending = step.status === 'pending';
 
                   return (
                     <div key={step.id} className="flex gap-4">

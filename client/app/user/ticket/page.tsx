@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import BottomNav from '@/components/BottomNav';
@@ -8,17 +8,6 @@ import { API_BASE_URL } from '@/lib/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 const DEMO_USER_ID = 'd7eb7b17-6d46-4df7-8b43-c50206863e28';
-
-interface ParkingSession {
-  id: string;
-  entry_time: string;
-  parking_spot: string;
-  payment_status: string;
-  payment_amount: number;
-  status: string;
-  vehicles: { vehicle_name: string; plate_number: string };
-  parking_sites: { name: string; address: string };
-}
 
 export default function TicketPage() {
   const router = useRouter();
@@ -51,8 +40,6 @@ export default function TicketPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user', DEMO_USER_ID, 'session'] });
     },
-  });
-
   const retrievalMutation = useMutation({
     mutationFn: async (sessionId: string) => {
       const response = await fetch(`${API_BASE_URL}/api/request-retrieval`, {

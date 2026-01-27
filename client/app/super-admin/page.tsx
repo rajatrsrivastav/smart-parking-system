@@ -5,24 +5,11 @@ import Link from 'next/link';
 import { API_BASE_URL } from '@/lib/api';
 
 export default function SuperAdminPage() {
-  const [dashboardData, setDashboardData] = useState<any>(null);
-  const [sites, setSites] = useState<any[]>([]);
+  const [dashboardData, setDashboardData] = useState<Record<string, unknown> | null>(null);
+  const [sites, setSites] = useState<Record<string, unknown>[]>([]);
   const [selectedSiteId, setSelectedSiteId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'overview' | 'approvals'>('overview');
-
-  useEffect(() => {
-    fetchSites();
-  }, []);
-
-  useEffect(() => {
-    if (sites.length > 0 && !selectedSiteId) {
-      setSelectedSiteId(sites[0].id);
-    }
-    if (selectedSiteId) {
-      loadDashboard(selectedSiteId);
-    }
-  }, [selectedSiteId, sites]);
 
   const fetchSites = async () => {
     try {
@@ -56,6 +43,19 @@ export default function SuperAdminPage() {
     }
     setLoading(false);
   };
+
+  useEffect(() => {
+    fetchSites();
+  }, []);
+
+  useEffect(() => {
+    if (sites.length > 0 && !selectedSiteId) {
+      setSelectedSiteId(sites[0].id);
+    }
+    if (selectedSiteId) {
+      loadDashboard(selectedSiteId);
+    }
+  }, [selectedSiteId, sites]);
 
   if (loading) {
     return (
@@ -95,7 +95,7 @@ export default function SuperAdminPage() {
               className="w-full pl-10 pr-4 py-2.5 border border-[#a78bfa] rounded-xl focus:outline-none focus:border-[#7c3aed] appearance-none bg-white text-gray-900 font-medium text-sm"
             >
               <option value="">Select a parking site...</option>
-              {sites.map((site: any) => (
+              {sites.map((site: Record<string, unknown>) => (
                 <option key={site.id} value={site.id}>
                   {site.name} - {site.address || 'No address'}
                 </option>
@@ -135,7 +135,7 @@ export default function SuperAdminPage() {
             <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
-            <h2 className="font-semibold text-gray-900">Today's Performance</h2>
+            <h2 className="font-semibold text-gray-900">Today&apos;s Performance</h2>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -208,25 +208,25 @@ export default function SuperAdminPage() {
           </div>
         </div>
 
-        {selectedSiteId && sites.find((s: any) => s.id === selectedSiteId) && (
+        {selectedSiteId && sites.find((s: Record<string, unknown>) => s.id === selectedSiteId) && (
           <div className="bg-[#f5f3ff] border border-[#c4b5fd] rounded-xl p-4 mb-4">
             <h3 className="font-semibold text-gray-900 mb-1">
-              {sites.find((s: any) => s.id === selectedSiteId)?.name}
+              {sites.find((s: Record<string, unknown>) => s.id === selectedSiteId)?.name}
             </h3>
             <p className="text-sm text-gray-600 mb-3">
-              {sites.find((s: any) => s.id === selectedSiteId)?.address}
+              {sites.find((s: Record<string, unknown>) => s.id === selectedSiteId)?.address}
             </p>
             <div className="flex gap-6">
               <div>
                 <p className="text-xs text-gray-500">Available Slots</p>
                 <p className="text-lg font-bold text-[#7c3aed]">
-                  {sites.find((s: any) => s.id === selectedSiteId)?.available_slots || 0}
+                  {sites.find((s: Record<string, unknown>) => s.id === selectedSiteId)?.available_slots || 0}
                 </p>
               </div>
               <div>
                 <p className="text-xs text-gray-500">Total Slots</p>
                 <p className="text-lg font-bold text-gray-900">
-                  {sites.find((s: any) => s.id === selectedSiteId)?.total_slots || 0}
+                  {sites.find((s: Record<string, unknown>) => s.id === selectedSiteId)?.total_slots || 0}
                 </p>
               </div>
             </div>

@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { API_BASE_URL } from '@/lib/api';
 
@@ -23,26 +22,14 @@ interface FormData {
 }
 
 export default function ManagerPage() {
-  const router = useRouter();
-  const [dashboardData, setDashboardData] = useState<any>(null);
+  const [dashboardData, setDashboardData] = useState<Record<string, unknown> | null>(null);
   const [drivers, setDrivers] = useState<Driver[]>([]);
-  const [parkingHistory, setParkingHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [driversLoading, setDriversLoading] = useState(false);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [formData, setFormData] = useState<FormData>({
-    name: '',
-    email: '',
-    phone: '',
-    is_available: true
-  });
-  const [submitting, setSubmitting] = useState(false);
-  const [formError, setFormError] = useState<string | null>(null);
 
   useEffect(() => {
     loadDashboard();
     loadDrivers();
-    loadParkingHistory();
     const interval = setInterval(loadDashboard, 30000);
     return () => clearInterval(interval);
   }, []);
@@ -74,66 +61,13 @@ export default function ManagerPage() {
     setDriversLoading(false);
   };
 
-  const loadParkingHistory = async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/parking-history`);
-      const result = await response.json();
-      if (result.success && result.data) {
-        setParkingHistory(result.data.history || []);
-      }
-    } catch (error) {
-      console.error('Failed to load parking history:', error);
-    }
   };
 
-  const handleAddDriver = async () => {
-    if (!formData.name.trim() || !formData.email.trim() || !formData.phone.trim()) {
-      setFormError('Name, email, and phone are required');
-      return;
-    }
 
-    setSubmitting(true);
-    setFormError(null);
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/drivers`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
-      });
 
-      const result = await response.json();
 
-      if (result.success && result.data) {
-        setDrivers([...drivers, result.data]);
-        setShowAddModal(false);
-        setFormData({ name: '', email: '', phone: '', is_available: true });
-        setFormError(null);
-      } else {
-        throw new Error(result.error || 'Failed to add driver');
-      }
-    } catch (err) {
-      setFormError(err instanceof Error ? err.message : 'Failed to add driver');
-    } finally {
-      setSubmitting(false);
-    }
-  };
 
-  const closeAddModal = () => {
-    setShowAddModal(false);
-    setFormData({ name: '', email: '', phone: '', is_available: true });
-    setFormError(null);
-  };
 
-  const formatTime = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleString('en-GB', { 
-      day: '2-digit',
-      month: 'short',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true 
-    });
-  };
 
   const getDuration = (entryTime: string) => {
     const entry = new Date(entryTime);
@@ -161,15 +95,6 @@ export default function ManagerPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </Link>
-          <button 
-            onClick={() => setShowAddModal(true)}
-            className="px-3 py-1.5 bg-[#374151] rounded-lg text-sm font-medium flex items-center gap-1.5"
-          >
-            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 7a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1V7z" />
-            </svg>
-            Add Driver
-          </button>
         </div>
         <h1 className="text-xl font-semibold">Manager Dashboard</h1>
         <p className="text-gray-400 text-sm">Manage valet assignments and parking operations</p>
@@ -209,7 +134,7 @@ export default function ManagerPage() {
           </div>
         ) : (
           <div className="space-y-3 mb-4">
-            {dashboardData.assignments.map((assignment: any) => (
+            {dashboardData.assignments.map((assignment: Record<string, unknown>) => (
               <div key={assignment.id} className="bg-white rounded-xl p-4">
                 <div className="flex items-start justify-between mb-2">
                   <div>
@@ -248,15 +173,6 @@ export default function ManagerPage() {
 
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-base font-semibold text-gray-900">Driver Management</h2>
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="px-3 py-1.5 bg-[#6366f1] text-white rounded-lg text-sm font-medium flex items-center gap-1.5"
-          >
-            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 7a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1V7z" />
-            </svg>
-            Add Driver
-          </button>
         </div>
 
         {driversLoading ? (

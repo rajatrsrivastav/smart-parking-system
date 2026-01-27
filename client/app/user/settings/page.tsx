@@ -7,12 +7,6 @@ import { API_BASE_URL } from '@/lib/api';
 import { useQuery } from '@tanstack/react-query';
 
 const DEMO_USER_ID = 'd7eb7b17-6d46-4df7-8b43-c50206863e28'
-
-interface UserData {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
   role: string;
 }
 
