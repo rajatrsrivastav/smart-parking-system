@@ -22,22 +22,19 @@ jobs:
         run: npm ci
         working-directory: ./client
 
+      - name: Run lint
+        run: npm run lint
+        working-directory: ./client
+
       - name: Build client
         run: npm run build
         working-directory: ./client
         env:
-          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL || 'http://localhost:4000' }}
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL || 'http://localhost:3000' }}
 
       - name: Install server dependencies
         run: npm ci
         working-directory: ./server
-
-      - name: Lint and test (if available)
-        run: |
-          if [ -f "package.json" ] && grep -q '"lint"' package.json; then npm run lint; fi
-          if [ -f "package.json" ] && grep -q '"test"' package.json; then npm test; fi
-        working-directory: ./client
-        continue-on-error: true
 
   deploy:
     needs: build-and-test
