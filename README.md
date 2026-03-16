@@ -10,6 +10,11 @@ A modern, mobile-first Smart Parking System web application built with Next.js, 
 
 ## 🚀 Features
 
+### Database
+- **Neon PostgreSQL**: Serverless PostgreSQL database
+- **Prisma ORM**: Type-safe database access with auto-completion
+- **Schema Management**: Easy database migrations and updates
+
 ### User Application
 - **Home Screen**: View recent parking history and quick access to scan QR
 - **QR Scanner**: Mock QR code scanning to select parking location
@@ -56,9 +61,26 @@ A modern, mobile-first Smart Parking System web application built with Next.js, 
    ```bash
    cd server
    npm install
+   
+   # Set up environment variables
+   # Create a .env file with:
+   # DATABASE_URL="your-neon-db-connection-string"
+   # FRONTEND_URL="http://localhost:3000"
+   
+   # Generate Prisma Client
+   npm run prisma:generate
+   
+   # Push schema to database (first time only)
+   npm run prisma:push
+   
    npm start
    ```
-   The server will run on `http://localhost:3001` (or as configured).
+   The server will run on `http://localhost:4000` (or as configured).
+   
+   **Prisma Commands**:
+   - `npm run prisma:generate` - Generate Prisma Client
+   - `npm run prisma:studio` - Open Prisma Studio (database GUI)
+   - `npm run prisma:push` - Push schema changes to database
 
 3. **Setup the client** (in a new terminal):
    ```bash

@@ -1,40 +1,55 @@
-import supabase from '../config/supabase.js';
+import prisma from '../config/database.js';
 import friendlyErrorMessage from '../utils/friendlyError.js';
 
 export const getManagerDashboard = async (req, res) => {
   try {
-    const { count: activeCars } = await supabase
-      .from('parking_sessions')
-      .select('id', { count: 'exact' })
-      .eq('status', 'active');
+    const activeCars = await prisma.parkingSession.count({
+      where: { status: 'active' }
+    });
 
-    const { count: retrieving } = await supabase
-      .from('valet_assignments')
-      .select('id', { count: 'exact' })
-      .eq('assignment_type', 'retrieve')
-      .in('status', ['pending', 'accepted']);
+    const retrieving = await prisma.valetAssignment.count({
+      where: {
+        assignment_type: 'retrieve',
+        status: { in: ['pending', 'accepted'] }
+      }
+    });
 
     const today = new Date().toISOString().split('T')[0];
-    const { data: todaySessions } = await supabase
-      .from('parking_sessions')
-      .select('payment_amount')
-      .gte('entry_time', `${today}T00:00:00`)
-      .eq('payment_status', 'paid');
+    const todaySessions = await prisma.parkingSession.findMany({
+      where: {
+        entry_time: { gte: `${today}T00:00:00` },
+        payment_status: 'paid'
+      },
+      select: { payment_amount: true }
+    });
 
     const totalToday = todaySessions?.length || 0;
-    const revenue = todaySessions?.reduce((sum, s) => sum + (s.payment_amount || 0), 0) || 0;
+    const revenue = todaySessions?.reduce((sum, s) => sum + (parseFloat(s.payment_amount) || 0), 0) || 0;
 
-    const { data: assignments } = await supabase
-      .from('parking_sessions')
-      .select(`
-        *,
-        vehicles(vehicle_name, plate_number),
-        users(name, phone),
-        parking_sites(name, address),
-        valet_assignments(status, assignment_type, driver_id)
-      `)
-      .eq('status', 'active')
-      .order('entry_time', { ascending: false });
+    const assignments = await prisma.parkingSession.findMany({
+      where: { status: 'active' },
+      include: {
+        vehicle: { select: { vehicle_name: true, plate_number: true } },
+        user: { select: { name: true, phone: true } },
+        parking_site: { select: { name: true, address: true } },
+        valet_assignments: { select: { status: true, assignment_type: true, driver_id: true } }
+      },
+      orderBy: { entry_time: 'desc' }
+    });
+
+    // Transform to match Supabase response format
+    const transformedAssignments = assignments.map(session => ({
+      ...session,
+      vehicles: session.vehicle,
+      users: session.user,
+      parking_sites: session.parking_site
+    }));
+
+    transformedAssignments.forEach(item => {
+      delete item.vehicle;
+      delete item.user;
+      delete item.parking_site;
+    });
 
     res.json({
       success: true,
@@ -43,7 +58,7 @@ export const getManagerDashboard = async (req, res) => {
         retrieving: retrieving || 0,
         totalToday,
         revenue,
-        assignments: assignments || []
+        assignments: transformedAssignments || []
       }
     });
   } catch (error) {
@@ -53,25 +68,38 @@ export const getManagerDashboard = async (req, res) => {
 
 export const getParkingHistory = async (req, res) => {
   try {
-    const { data: sessions } = await supabase
-      .from('parking_sessions')
-      .select(`
-        *,
-        vehicles(vehicle_name, plate_number),
-        users(name, phone),
-        parking_sites(name, address)
-      `)
-      .eq('status', 'completed')
-      .order('entry_time', { ascending: false })
-      .limit(10);
+    const sessions = await prisma.parkingSession.findMany({
+      where: { status: 'completed' },
+      include: {
+        vehicle: { select: { vehicle_name: true, plate_number: true } },
+        user: { select: { name: true, phone: true } },
+        parking_site: { select: { name: true, address: true } }
+      },
+      orderBy: { entry_time: 'desc' },
+      take: 10
+    });
 
     const totalBookings = sessions?.length || 0;
+
+    // Transform to match Supabase response format
+    const transformedSessions = sessions.map(session => ({
+      ...session,
+      vehicles: session.vehicle,
+      users: session.user,
+      parking_sites: session.parking_site
+    }));
+
+    transformedSessions.forEach(item => {
+      delete item.vehicle;
+      delete item.user;
+      delete item.parking_site;
+    });
 
     res.json({
       success: true,
       data: {
         totalBookings,
-        history: sessions || []
+        history: transformedSessions || []
       }
     });
   } catch (error) {
@@ -83,26 +111,53 @@ export const getParkingSessionsByStatus = async (req, res) => {
   try {
     const { status } = req.query;
 
-    let query = supabase
-      .from('parking_sessions')
-      .select(`
-        *,
-        vehicles(vehicle_name, plate_number),
-        users(name, phone),
-        parking_sites(name, address),
-        valet_assignments(status, assignment_type, driver_id, users(name))
-      `);
+    const whereClause = status && status !== 'all' ? { status } : {};
 
-    if (status && status !== 'all') {
-      query = query.eq('status', status);
-    }
+    const sessions = await prisma.parkingSession.findMany({
+      where: whereClause,
+      include: {
+        vehicle: { select: { vehicle_name: true, plate_number: true } },
+        user: { select: { name: true, phone: true } },
+        parking_site: { select: { name: true, address: true } },
+        valet_assignments: {
+          select: {
+            status: true,
+            assignment_type: true,
+            driver_id: true,
+            driver: { select: { name: true } }
+          }
+        }
+      },
+      orderBy: { entry_time: 'desc' }
+    });
 
-    const { data: sessions } = await query
-      .order('entry_time', { ascending: false });
+    // Transform to match Supabase response format
+    const transformedSessions = sessions.map(session => {
+      const transformed = {
+        ...session,
+        vehicles: session.vehicle,
+        users: session.user,
+        parking_sites: session.parking_site,
+        valet_assignments: session.valet_assignments.map(va => ({
+          ...va,
+          users: va.driver
+        }))
+      };
+      
+      delete transformed.vehicle;
+      delete transformed.user;
+      delete transformed.parking_site;
+      
+      transformed.valet_assignments.forEach(va => {
+        delete va.driver;
+      });
+      
+      return transformed;
+    });
 
     res.json({
       success: true,
-      data: sessions || []
+      data: transformedSessions || []
     });
   } catch (error) {
     res.status(500).json({ success: false, error: friendlyErrorMessage(error) });
@@ -114,55 +169,45 @@ export const getSuperAdminDashboard = async (req, res) => {
     const { siteId } = req.query;
     const today = new Date().toISOString().split('T')[0];
 
-    let todayQuery = supabase
-      .from('parking_sessions')
-      .select('payment_amount')
-      .gte('entry_time', `${today}T00:00:00`);
+    const todayWhere = {
+      entry_time: { gte: `${today}T00:00:00` },
+      ...(siteId && { site_id: siteId })
+    };
 
-    if (siteId) {
-      todayQuery = todayQuery.eq('site_id', siteId);
-    }
-
-    const { data: todaySessions } = await todayQuery;
+    const todaySessions = await prisma.parkingSession.findMany({
+      where: todayWhere,
+      select: { payment_amount: true }
+    });
 
     const ticketsIssued = todaySessions?.length || 0;
     const collection = todaySessions
       ?.filter(s => s.payment_amount)
-      .reduce((sum, s) => sum + s.payment_amount, 0) || 0;
+      .reduce((sum, s) => sum + parseFloat(s.payment_amount), 0) || 0;
 
-    let totalQuery = supabase
-      .from('parking_sessions')
-      .select('payment_amount');
+    const totalWhere = siteId ? { site_id: siteId } : {};
 
-    if (siteId) {
-      totalQuery = totalQuery.eq('site_id', siteId);
-    }
-
-    const { data: allSessions } = await totalQuery;
+    const allSessions = await prisma.parkingSession.findMany({
+      where: totalWhere,
+      select: { payment_amount: true }
+    });
 
     const totalTickets = allSessions?.length || 0;
-    const totalCollection = allSessions?.reduce((sum, s) => sum + (s.payment_amount || 0), 0) || 0;
+    const totalCollection = allSessions?.reduce((sum, s) => sum + (parseFloat(s.payment_amount) || 0), 0) || 0;
 
-    let activeQuery = supabase
-      .from('parking_sessions')
-      .select('id', { count: 'exact' })
-      .eq('status', 'active');
+    const activeWhere = {
+      status: 'active',
+      ...(siteId && { site_id: siteId })
+    };
 
-    if (siteId) {
-      activeQuery = activeQuery.eq('site_id', siteId);
-    }
+    const activeParkingCount = await prisma.parkingSession.count({
+      where: activeWhere
+    });
 
-    const { count: activeParkingCount } = await activeQuery;
+    const sitesWhere = siteId ? { id: siteId } : {};
 
-    let sitesQuery = supabase
-      .from('parking_sites')
-      .select('*');
-
-    if (siteId) {
-      sitesQuery = sitesQuery.eq('id', siteId);
-    }
-
-    const { data: sites } = await sitesQuery;
+    const sites = await prisma.parkingSite.findMany({
+      where: sitesWhere
+    });
 
     res.json({
       success: true,

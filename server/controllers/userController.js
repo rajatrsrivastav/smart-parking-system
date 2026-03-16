@@ -1,27 +1,31 @@
-import supabase from '../config/supabase.js';
+import prisma from '../config/database.js';
 
 const friendlyErrorMessage = (err) => {
   if (!err) return 'Something went wrong. Please try again.';
-  const msg = (err.message || String(err)).toLowerCase();
-
-  if (/duplicate key value|unique constraint|violates unique constraint|vehicles_plate_number_key|already exists/.test(msg)) {
+  
+  // Handle Prisma errors
+  if (err.code === 'P2002') {
     return 'A vehicle with that plate number already exists.';
   }
+  if (err.code === 'P2025') {
+    return 'Requested item not found.';
+  }
+  if (err.code === 'P2003') {
+    return 'Related record not found.';
+  }
+  
+  const msg = (err.message || String(err)).toLowerCase();
   if (/payment required/.test(msg)) return 'Payment is required before retrieval.';
   if (/not found/.test(msg)) return 'Requested item not found.';
-  if (/pgrst116/.test(msg)) return 'No records found.';
 
   return 'Something went wrong. Please try again.';
 };
 
 export const getSites = async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from('parking_sites')
-      .select('*')
-      .order('name');
-
-    if (error) throw error;
+    const data = await prisma.parkingSite.findMany({
+      orderBy: { name: 'asc' }
+    });
     res.json({ success: true, data });
   } catch (error) {
     res.status(500).json({ success: false, error: friendlyErrorMessage(error) });
@@ -30,12 +34,9 @@ export const getSites = async (req, res) => {
 
 export const getUserVehicles = async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from('vehicles')
-      .select('*')
-      .eq('user_id', req.params.userId);
-
-    if (error) throw error;
+    const data = await prisma.vehicle.findMany({
+      where: { user_id: req.params.userId }
+    });
     res.json({ success: true, data });
   } catch (error) {
     res.status(500).json({ success: false, error: friendlyErrorMessage(error) });
@@ -44,13 +45,15 @@ export const getUserVehicles = async (req, res) => {
 
 export const getUserProfile = async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from('users')
-      .select('id, name, email, phone, role')
-      .eq('id', req.params.userId)
-      .single();
-
-    if (error) throw error;
+    const data = await prisma.user.findUnique({
+      where: { id: req.params.userId },
+      select: { id: true, name: true, email: true, phone: true, role: true }
+    });
+    
+    if (!data) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+    
     res.json({ success: true, data });
   } catch (error) {
     res.status(500).json({ success: false, error: friendlyErrorMessage(error) });
@@ -62,14 +65,13 @@ export const createParkingRequest = async (req, res) => {
   try {
     const { user_id, vehicle_id, site_id, payment_amount } = req.body;
 
-    const { data: existingSession, error: checkError } = await supabase
-      .from('parking_sessions')
-      .select('id, status')
-      .eq('user_id', user_id)
-      .in('status', ['active', 'retrieval_requested'])
-      .single();
+    const existingSession = await prisma.parkingSession.findFirst({
+      where: {
+        user_id,
+        status: { in: ['active', 'retrieval_requested'] }
+      }
+    });
 
-    if (checkError && checkError.code !== 'PGRST116') throw checkError;
     if (existingSession) {
       return res.status(400).json({ 
         success: false, 
@@ -77,44 +79,36 @@ export const createParkingRequest = async (req, res) => {
       });
     }
 
-    const { data: site, error: siteError } = await supabase
-      .from('parking_sites')
-      .select('fixed_parking_fee')
-      .eq('id', site_id)
-      .single();
+    const site = await prisma.parkingSite.findUnique({
+      where: { id: site_id },
+      select: { fixed_parking_fee: true }
+    });
 
-    if (siteError) throw siteError;
     if (!site) throw new Error('Parking site not found');
 
     const parkingFee = payment_amount || site.fixed_parking_fee;
     console.log('Site:', site);
     console.log('Parking fee:', parkingFee);
 
-    const { data: session, error: sessionError } = await supabase
-      .from('parking_sessions')
-      .insert([{
+    const session = await prisma.parkingSession.create({
+      data: {
         user_id,
         vehicle_id,
         site_id,
         entry_time: new Date().toISOString(),
         status: 'active',
         payment_status: 'completed',
-        payment_amount: parkingFee,
-        parking_fee: parkingFee
-      }])
-      .select(`
-        id, user_id, vehicle_id, site_id, parking_spot, entry_time, exit_time, payment_amount, payment_method, payment_status, status, created_at, updated_at,
-        users(name, phone),
-        vehicles(vehicle_name, plate_number),
-        parking_sites(name, address, fixed_parking_fee)
-      `)
-      .single();
+        payment_amount: parkingFee
+      },
+      include: {
+        user: { select: { name: true, phone: true } },
+        vehicle: { select: { vehicle_name: true, plate_number: true } },
+        parking_site: { select: { name: true, address: true } }
+      }
+    });
 
-    if (sessionError) throw sessionError;
-
-    const { error: paymentError } = await supabase
-      .from('parking_payments')
-      .insert([{
+    await prisma.parkingPayment.create({
+      data: {
         session_id: session.id,
         user_id,
         amount: parkingFee,
@@ -122,39 +116,56 @@ export const createParkingRequest = async (req, res) => {
         payment_status: 'completed',
         transaction_id: `PARK-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         paid_at: new Date().toISOString()
-      }]);
+      }
+    });
 
-    if (paymentError) throw paymentError;
     const responseSession = {
       ...session,
       parking_fee: parkingFee,
-      payment_amount: parkingFee
+      payment_amount: parkingFee,
+      users: session.user,
+      vehicles: session.vehicle,
+      parking_sites: session.parking_site
     };
+    delete responseSession.user;
+    delete responseSession.vehicle;
+    delete responseSession.parking_site;
 
     res.status(201).json({ success: true, data: { session: responseSession, parking_fee: parkingFee } });
   } catch (error) {
+    console.error('Create parking request error:', error);
     res.status(500).json({ success: false, error: friendlyErrorMessage(error) });
   }
 };
 
 export const getMySession = async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from('parking_sessions')
-      .select(`
-        *,
-        vehicles(vehicle_name, plate_number),
-        parking_sites(name, address),
-        valet_assignments(status, assignment_type)
-      `)
-      .eq('user_id', req.params.userId)
-      .in('status', ['active', 'retrieval_requested'])
-      .order('entry_time', { ascending: false })
-      .limit(1)
-      .single();
+    const data = await prisma.parkingSession.findFirst({
+      where: {
+        user_id: req.params.userId,
+        status: { in: ['active', 'retrieval_requested'] }
+      },
+      include: {
+        vehicle: { select: { vehicle_name: true, plate_number: true } },
+        parking_site: { select: { name: true, address: true } },
+        valet_assignments: { select: { status: true, assignment_type: true } }
+      },
+      orderBy: { entry_time: 'desc' }
+    });
 
-    if (error && error.code !== 'PGRST116') throw error;
-    res.json({ success: true, data: data || null });
+    // Transform to match Supabase response format
+    const transformedData = data ? {
+      ...data,
+      vehicles: data.vehicle,
+      parking_sites: data.parking_site
+    } : null;
+    
+    if (transformedData) {
+      delete transformedData.vehicle;
+      delete transformedData.parking_site;
+    }
+
+    res.json({ success: true, data: transformedData });
   } catch (error) {
     res.status(500).json({ success: false, error: friendlyErrorMessage(error) });
   }
@@ -164,40 +175,31 @@ export const requestRetrieval = async (req, res) => {
   try {
     const { session_id, user_id } = req.body;
 
-    const { data: session, error: sessionError } = await supabase
-      .from('parking_sessions')
-      .select('*')
-      .eq('id', session_id)
-      .eq('user_id', user_id)
-      .single();
+    const session = await prisma.parkingSession.findFirst({
+      where: {
+        id: session_id,
+        user_id
+      }
+    });
 
-    if (sessionError) throw sessionError;
     if (!session) throw new Error('Session not found');
     if (session.payment_status !== 'completed') throw new Error('Payment required before retrieval');
 
-    const { data: assignment, error: assignmentError } = await supabase
-      .from('valet_assignments')
-      .insert([{
-        session_id,
-        driver_id: null,
-        assignment_type: 'retrieve',
-        status: 'assigned', 
-        assigned_at: new Date().toISOString()
-      }])
-      .select()
-      .single();
-
-    if (assignmentError) throw assignmentError;
-
-    const { error: updateError } = await supabase
-      .from('parking_sessions')
-      .update({ status: 'retrieval_requested' })
-      .eq('id', session_id);
-
-    if (updateError) {
-      console.error('Update error:', updateError);
-      throw updateError;
-    }
+    await prisma.$transaction([
+      prisma.valetAssignment.create({
+        data: {
+          session_id,
+          driver_id: null,
+          assignment_type: 'retrieve',
+          status: 'assigned',
+          assigned_at: new Date().toISOString()
+        }
+      }),
+      prisma.parkingSession.update({
+        where: { id: session_id },
+        data: { status: 'retrieval_requested' }
+      })
+    ]);
 
     res.json({ success: true, message: 'Retrieval request submitted successfully' });
   } catch (error) {
@@ -210,22 +212,17 @@ export const mockPayment = async (req, res) => {
   try {
     const { session_id, amount } = req.body;
 
-    const { data, error } = await supabase
-      .from('parking_sessions')
-      .update({
+    const data = await prisma.parkingSession.update({
+      where: { id: session_id },
+      data: {
         payment_status: 'completed',
         payment_amount: amount,
         payment_method: 'test'
-      })
-      .eq('id', session_id)
-      .select()
-      .single();
+      }
+    });
 
-    if (error) throw error;
-
-    await supabase
-      .from('parking_payments')
-      .insert([{
+    await prisma.parkingPayment.create({
+      data: {
         session_id,
         user_id: data.user_id,
         amount,
@@ -233,7 +230,8 @@ export const mockPayment = async (req, res) => {
         payment_status: 'completed',
         transaction_id: `TEST-${Date.now()}`,
         paid_at: new Date().toISOString()
-      }]);
+      }
+    });
 
     res.json({ success: true, data });
   } catch (error) {
@@ -243,20 +241,32 @@ export const mockPayment = async (req, res) => {
 
 export const getMyHistory = async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from('parking_sessions')
-      .select(`
-        *,
-        vehicles(vehicle_name, plate_number),
-        parking_sites(name, address)
-      `)
-      .eq('user_id', req.params.userId)
-      .eq('status', 'completed')
-      .order('exit_time', { ascending: false })
-      .limit(20);
+    const data = await prisma.parkingSession.findMany({
+      where: {
+        user_id: req.params.userId,
+        status: 'completed'
+      },
+      include: {
+        vehicle: { select: { vehicle_name: true, plate_number: true } },
+        parking_site: { select: { name: true, address: true } }
+      },
+      orderBy: { exit_time: 'desc' },
+      take: 20
+    });
 
-    if (error) throw error;
-    res.json({ success: true, data });
+    // Transform to match Supabase response format
+    const transformedData = data.map(session => ({
+      ...session,
+      vehicles: session.vehicle,
+      parking_sites: session.parking_site
+    }));
+    
+    transformedData.forEach(item => {
+      delete item.vehicle;
+      delete item.parking_site;
+    });
+
+    res.json({ success: true, data: transformedData });
   } catch (error) {
     res.status(500).json({ success: false, error: friendlyErrorMessage(error) });
   }
@@ -271,18 +281,15 @@ export const createVehicle = async (req, res) => {
       return res.status(400).json({ success: false, error: 'vehicle_name and plate_number are required' });
     }
 
-    const { data, error } = await supabase
-      .from('vehicles')
-      .insert([{
+    const data = await prisma.vehicle.create({
+      data: {
         user_id: userId,
         vehicle_name,
         plate_number,
         vehicle_type: vehicle_type || 'sedan'
-      }])
-      .select()
-      .single();
+      }
+    });
 
-    if (error) throw error;
     res.status(201).json({ success: true, data });
   } catch (error) {
     res.status(500).json({ success: false, error: friendlyErrorMessage(error) });
@@ -299,15 +306,12 @@ export const updateVehicle = async (req, res) => {
     if (plate_number !== undefined) updatePayload.plate_number = plate_number;
     if (vehicle_type !== undefined) updatePayload.vehicle_type = vehicle_type;
 
-    const { data, error } = await supabase
-      .from('vehicles')
-      .update(updatePayload)
-      .eq('id', vehicleId)
-      .select();
+    const data = await prisma.vehicle.update({
+      where: { id: vehicleId },
+      data: updatePayload
+    });
 
-    if (error) throw error;
-    const result = Array.isArray(data) ? data[0] : data;
-    res.json({ success: true, data: result });
+    res.json({ success: true, data });
   } catch (error) {
     res.status(500).json({ success: false, error: friendlyErrorMessage(error) });
   }
@@ -317,15 +321,11 @@ export const deleteVehicle = async (req, res) => {
   try {
     const vehicleId = req.params.vehicleId;
 
-    const { data, error } = await supabase
-      .from('vehicles')
-      .delete()
-      .eq('id', vehicleId)
-      .select();
+    const data = await prisma.vehicle.delete({
+      where: { id: vehicleId }
+    });
 
-    if (error) throw error;
-    const result = Array.isArray(data) ? data[0] : data;
-    res.json({ success: true, data: result });
+    res.json({ success: true, data });
   } catch (error) {
     res.status(500).json({ success: false, error: friendlyErrorMessage(error) });
   }
@@ -335,21 +335,31 @@ export const getParkingSession = async (req, res) => {
   try {
     const { userId } = req.params;
     
-    const { data, error } = await supabase
-      .from('parking_sessions')
-      .select(`
-        *,
-        vehicles(vehicle_name, plate_number),
-        parking_sites(name, address)
-      `)
-      .eq('user_id', userId)
-      .in('status', ['retrieval_requested', 'in_transit', 'ready_for_retrieval'])
-      .order('entry_time', { ascending: false })
-      .limit(1)
-      .single();
+    const data = await prisma.parkingSession.findFirst({
+      where: {
+        user_id: userId,
+        status: { in: ['retrieval_requested', 'in_transit', 'ready_for_retrieval'] }
+      },
+      include: {
+        vehicle: { select: { vehicle_name: true, plate_number: true } },
+        parking_site: { select: { name: true, address: true } }
+      },
+      orderBy: { entry_time: 'desc' }
+    });
 
-    if (error && error.code !== 'PGRST116') throw error;
-    res.json({ success: true, data: data || null });
+    // Transform to match Supabase response format
+    const transformedData = data ? {
+      ...data,
+      vehicles: data.vehicle,
+      parking_sites: data.parking_site
+    } : null;
+    
+    if (transformedData) {
+      delete transformedData.vehicle;
+      delete transformedData.parking_site;
+    }
+
+    res.json({ success: true, data: transformedData });
   } catch (error) {
     res.status(500).json({ success: false, error: friendlyErrorMessage(error) });
   }
@@ -359,17 +369,14 @@ export const completeParkingSession = async (req, res) => {
   try {
     const { sessionId } = req.body;
 
-    const { data, error } = await supabase
-      .from('parking_sessions')
-      .update({
+    const data = await prisma.parkingSession.update({
+      where: { id: sessionId },
+      data: {
         status: 'completed',
         exit_time: new Date().toISOString()
-      })
-      .eq('id', sessionId)
-      .select()
-      .single();
+      }
+    });
 
-    if (error) throw error;
     res.json({ success: true, data });
   } catch (error) {
     res.status(500).json({ success: false, error: friendlyErrorMessage(error) });

@@ -1,0 +1,169 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Enums
+enum UserRole {
+  user
+  driver
+  manager
+  super_admin
+}
+
+enum PaymentStatus {
+  pending
+  completed
+  failed
+}
+
+enum SessionStatus {
+  active
+  completed
+  cancelled
+  retrieval_requested
+  in_transit
+  ready_for_retrieval
+}
+
+enum AssignmentType {
+  park
+  retrieve
+}
+
+enum AssignmentStatus {
+  pending
+  assigned
+  in_progress
+  completed
+  cancelled
+}
+
+// Models
+model User {
+  id         String   @id @default(uuid()) @db.Uuid
+  name       String   @db.VarChar(255)
+  email      String   @unique @db.VarChar(255)
+  phone      String   @db.VarChar(20)
+  role       UserRole
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @updatedAt @db.Timestamptz(6)
+
+  // Relations
+  vehicles          Vehicle[]
+  parking_sessions  ParkingSession[]
+  valet_assignments ValetAssignment[]
+  parking_payments  ParkingPayment[]
+
+  @@index([email])
+  @@index([role])
+  @@map("users")
+}
+
+model ParkingSite {
+  id              String   @id @default(uuid()) @db.Uuid
+  name            String   @db.VarChar(255)
+  address         String   @db.Text
+  city            String   @db.VarChar(100)
+  total_slots     Int
+  available_slots Int
+  created_at      DateTime @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime @updatedAt @db.Timestamptz(6)
+
+  // Relations
+  parking_sessions ParkingSession[]
+
+  @@map("parking_sites")
+}
+
+model Vehicle {
+  id           String   @id @default(uuid()) @db.Uuid
+  user_id      String   @db.Uuid
+  vehicle_name String   @db.VarChar(255)
+  plate_number String   @unique @db.VarChar(50)
+  vehicle_type String   @db.VarChar(50)
+  created_at   DateTime @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime @updatedAt @db.Timestamptz(6)
+
+  // Relations
+  user             User             @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  parking_sessions ParkingSession[]
+
+  @@index([user_id])
+  @@index([plate_number])
+  @@map("vehicles")
+}
+
+model ParkingSession {
+  id             String        @id @default(uuid()) @db.Uuid
+  user_id        String        @db.Uuid
+  vehicle_id     String        @db.Uuid
+  site_id        String        @db.Uuid
+  parking_spot   String?       @db.VarChar(50)
+  entry_time     DateTime      @db.Timestamptz(6)
+  exit_time      DateTime?     @db.Timestamptz(6)
+  payment_amount Decimal?      @db.Decimal(10, 2)
+  payment_method String?       @db.VarChar(50)
+  payment_status PaymentStatus @default(pending)
+  status         SessionStatus @default(active)
+  created_at     DateTime      @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime      @updatedAt @db.Timestamptz(6)
+
+  // Relations
+  user              User              @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  vehicle           Vehicle           @relation(fields: [vehicle_id], references: [id], onDelete: Cascade)
+  parking_site      ParkingSite       @relation(fields: [site_id], references: [id], onDelete: Cascade)
+  valet_assignments ValetAssignment[]
+  parking_payments  ParkingPayment[]
+
+  @@index([user_id])
+  @@index([site_id])
+  @@index([status])
+  @@index([entry_time])
+  @@map("parking_sessions")
+}
+
+model ValetAssignment {
+  id              String           @id @default(uuid()) @db.Uuid
+  session_id      String           @db.Uuid
+  driver_id       String?          @db.Uuid
+  assignment_type AssignmentType
+  status          AssignmentStatus @default(pending)
+  assigned_at     DateTime         @db.Timestamptz(6)
+  completed_at    DateTime?        @db.Timestamptz(6)
+  created_at      DateTime         @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime         @updatedAt @db.Timestamptz(6)
+
+  // Relations
+  parking_session ParkingSession @relation(fields: [session_id], references: [id], onDelete: Cascade)
+  driver          User?          @relation(fields: [driver_id], references: [id], onDelete: Cascade)
+
+  @@index([driver_id])
+  @@index([status])
+  @@map("valet_assignments")
+}
+
+model ParkingPayment {
+  id             String        @id @default(uuid()) @db.Uuid
+  session_id     String        @db.Uuid
+  user_id        String        @db.Uuid
+  amount         Decimal       @db.Decimal(10, 2)
+  payment_method String        @db.VarChar(50)
+  payment_status PaymentStatus
+  transaction_id String        @db.VarChar(255)
+  paid_at        DateTime      @db.Timestamptz(6)
+  created_at     DateTime      @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime      @updatedAt @db.Timestamptz(6)
+
+  // Relations
+  parking_session ParkingSession @relation(fields: [session_id], references: [id], onDelete: Cascade)
+  user            User           @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("parking_payments")
+}
